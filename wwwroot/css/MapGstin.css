@@ -1,0 +1,145 @@
+﻿/* GSTIN List Container (replaces <select>) */
+.gstin-list {
+    max-width: 350px;
+    min-width: 350px;
+    min-height: 350px;
+    max-height: 350px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 1rem;
+    box-sizing: border-box;
+    overflow-y: auto;
+    overflow-x: auto;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    white-space: nowrap;
+}
+
+/* Each GSTIN item */
+/* List item container */
+.gstin-item {
+    padding: 2px 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+/* Inner text wrapper to allow horizontal scrolling */
+.gstin-text {
+    display: block;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+/* Hover on item */
+.gstin-item:hover {
+    background-color: #d1e7dd;
+    color: #000;
+}
+
+/* Selected GSTIN styling */
+.gstin-item.selected {
+    background-color: #007bff;
+    color: #fff;
+}
+
+/* Optional: better visibility for long items */
+.gstin-text::-webkit-scrollbar {
+    height: 6px;
+}
+
+.gstin-text::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+
+    /* Highlighted text inside search */
+    .gstin-item mark {
+        background-color: yellow;
+        padding: 0;
+        font-weight: bold;
+    }
+
+/* Arrow buttons container */
+.button-click {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2rem;
+    padding: 1rem 0;
+}
+
+    /* Arrow buttons */
+    .button-click button {
+        width: 2.5em;
+        height: 2.5em;
+        border: none;
+        border-radius: 50%;
+        background-color: #007bff;
+        color: #fff;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .button-click button:hover {
+            background-color: #0056b3;
+            transform: scale(1.1);
+        }
+
+/* Responsive layout for container */
+@media (min-width: 1200px) {
+    .container, .container-lg, .container-md, .container-sm, .container-xl {
+        max-width: 1300px;
+    }
+}
+
+/* Tablet styles */
+@media (max-width: 1024px) {
+    .gstin-list {
+        font-size: 0.95rem;
+        min-height: 250px;
+    }
+
+    .button-click button {
+        width: 2.2em;
+        height: 2.2em;
+        font-size: 1rem;
+    }
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+    .button-click {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .gstin-list {
+        width: 90%;
+        font-size: 1rem;
+        min-height: 200px;
+    }
+}
+
+/* Small mobile screens */
+@media (max-width: 480px) {
+    .button-click button {
+        width: 2em;
+        height: 2em;
+        font-size: 0.95rem;
+    }
+
+    .gstin-list {
+        font-size: 0.95rem;
+        min-height: 180px;
+    }
+}

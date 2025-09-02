@@ -1,0 +1,259 @@
+﻿@{
+    ViewData["Title"] = "Vendor Conversation";
+    var responseDict = ViewBag.ResponseDict as Dictionary<string, string> ?? new Dictionary<string, string>();
+    var notice = ViewBag.Notice as CAF.GstMatching.Models.NoticeDataModel;
+    var chat = ViewBag.chat as List<CAF.GstMatching.Models.NoticeChatModel>;
+    var username = ViewBag.userName;
+    var fromDate = ViewBag.fromDate;
+    var toDate = ViewBag.toDate;
+    var Status = ViewBag.Status;
+    var priority = ViewBag.priority;
+    var isServer = ViewBag.isServer;
+    var serverURl = ViewBag.serverURl;
+}
+
+<!-- ✅ SignalR -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+
+<link rel="stylesheet" href="~/css/ConversationChat.css" />
+
+<div class="chat-container">
+    <div class="left">
+        <h4>Request Details:</h4>
+        <table border="1">
+            <tr><th>Request Number</th><td>@notice?.RequestNumber</td></tr>
+            <tr><th>Notice Title</th><td>@notice?.NoticeTitle</td></tr>
+            <tr><th>Notice Date</th><td>@notice?.NoticeDatetime?.ToString("yyyy-MMM-dd")</td></tr>
+            <tr><th>Notice Created Date time</th><td>@notice?.CreatedDatetime?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td></tr>
+            <tr><th>Priority</th><td>@notice?.Priority</td></tr>
+            <tr><th>Status</th><td>@notice?.status</td></tr>
+            <tr><th>Description</th><td><div class="description-cell">@notice?.NoticeDescription</div></td></tr>
+        </table>
+    </div>
+
+    <div class="right">
+        <h4>Chat Conversation:</h4>
+        <div id="chatBox" style="height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; background-color: #f9f9f9; border-radius: 5px;">
+            @if (chat != null && chat.Any())
+            {
+                foreach (var message in chat.OrderBy(m => m.MessageDatetime)) //OrderByDescending
+                {
+                    var isCurrentUser = message.Name == username;
+                    var alignClass = isCurrentUser ? "chat-right" : "chat-left";
+                    var bubbleColor = isCurrentUser ? "#cce5ff" : "#d4edda";
+                    <div class="@alignClass">
+                        <div style="background-color:@bubbleColor; padding: 10px; border-radius: 8px; max-width: 75%;">
+                            @message.Message
+                        </div>
+                        <small style="color: gray;">@message.Name | @message.MessageDatetime?.ToString("dd-MM-yyyy hh:mm tt")</small>
+                    </div>
+                }
+            }
+            else
+            {
+                <p id="noMessagesText">No messages yet.</p>
+            }
+        </div>
+        <div id="typingIndicator" style="display: none; color: gray; font-style: italic;"></div>
+        @if (notice?.status != "Closed")
+        {
+            <div style="margin-top: 10px; display: flex;">
+                <input type="text" autofocus id="chatInput" class="form-control" placeholder="Type your message..." style="flex: 1; margin-right: 10px;" />
+                <button type="button" id="sendButton" class="btn btn-success" onclick="sendMessage()">Send</button>
+            </div>
+       
+            <div class="button-container">
+                <button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("ActiveNotices", "Vendor", new{ fromDate = fromDate, toDate = toDate, status = Status, priority = priority })'">
+                    @(responseDict.ContainsKey("btnBackToActiveNotices") ? responseDict["btnBackToActiveNotices"] : "Back to Active Notices")
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="button-container">
+                <button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("ClosedNotices", "Vendor", new{ fromDate = fromDate, toDate = toDate, priority = priority })'">
+                    @(responseDict.ContainsKey("btnBackToClosedNotices") ? responseDict["btnBackToClosedNotices"] : "Back to Closed Notices")
+                </button>
+            </div>
+        }
+        <audio id="chatSound" src="~/sounds/message_pop_alert.wav" preload="auto"></audio>
+    </div>
+</div>
+<script>
+    const requestNumber = '@notice?.RequestNumber';
+    const userName = '@username';
+    const clientGstin = '@notice?.ClientGstin';
+
+    console.log("🔵 requestNumber:", requestNumber);
+    console.log("🔵 userName:", userName);
+    console.log("🔵 clientGstin:", clientGstin);
+
+    // ✅ Mark as read when opening the chat
+    markAsRead(requestNumber, clientGstin, false);  // Assume on open, mark as read from *other side*
+
+
+    var baseUrl = '@Url.Content("~/")';
+    let hubUrl = baseUrl + "chathub";
+    console.log("SignalR Hub URL:", hubUrl); // Log the hub URL for debugging
+
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl(hubUrl)
+        .configureLogging(signalR.LogLevel.Information)
+        .build();
+
+    connection.on("ReceiveMessage", function (requestNumber, sender, message, time) {
+        const isCurrentUser = sender === userName;
+        const alignClass = isCurrentUser ? "chat-right" : "chat-left";
+        const bubbleColor = isCurrentUser ? "#cce5ff" : "#d4edda";
+
+        // ✅ Play sound if sender is not current user
+        if (!isCurrentUser) {
+            const sound = document.getElementById("chatSound");
+            if (sound) sound.play();
+        }
+
+        // 🧼 Remove "No messages yet." if it exists
+        const noMsgElement = document.getElementById("noMessagesText");
+        if (noMsgElement) {
+            noMsgElement.remove();
+        }
+
+        const html = `
+            <div class="${alignClass}">
+                <div style="background-color:${bubbleColor}; padding:10px; border-radius:8px; max-width:75%;">
+                    ${message}
+                </div>
+                <small style="color: gray;">${sender} | ${time}</small>
+            </div>`;
+
+        $("#chatBox").append(html);
+        scrollToBottom();
+
+        markAsRead(requestNumber, clientGstin, isCurrentUser); // ✅ Mark as read when receiving a message
+        
+    });
+
+    connection.on("NoticeClosed", function (closedRequestNumber) {
+        if (closedRequestNumber === requestNumber) {
+            console.log("🚫 Notice closed. Disabling chat.");
+
+            // Display a system message
+            const html = `
+                <div class="chat-center">
+                    <div style="background-color:#f8d7da; padding:10px; border-radius:8px; max-width:75%;">
+                        ⚠️ This notice has been closed. You can no longer send messages.
+                    </div>
+                </div>`;
+            $("#chatBox").append(html);
+            scrollToBottom();
+
+            // Disable chat input and send
+            document.getElementById('chatInput').disabled = true;
+            const sendButton = document.getElementById('sendButton');
+            if (sendButton) {
+                sendButton.disabled = true;
+            }
+        }
+    });
+
+    // let typingTimeout;
+    // document.getElementById('chatInput').addEventListener('input', function () {
+    //     clearTimeout(typingTimeout);
+    //     connection.invoke("SendTypingNotification", requestNumber, userName);
+
+    //     typingTimeout = setTimeout(() => {
+    //         document.getElementById("typingIndicator").style.display = "none";
+    //     }, 3000); // hide typing after 3 seconds
+    // });
+
+    // connection.on("UserTyping", function (reqNo, sender) {
+    //     if (reqNo === requestNumber && sender !== userName) {
+    //         const indicator = document.getElementById("typingIndicator");
+    //         if (indicator) {
+    //             indicator.innerText = `${sender} is typing...`;
+    //             indicator.style.display = "block";
+    //         }
+    //     }
+    // });
+
+    connection.start().then(function () {
+        console.log("✅ SignalR connected.");
+        connection.invoke("JoinGroup", requestNumber)
+            .then(() => console.log("✅ Joined SignalR group:", requestNumber))
+            .catch(err => console.error("❌ Failed to join group:", err.toString()));
+    }).catch(function (err) {
+        console.error("❌ SignalR connection failed:", err.toString());
+    });
+
+    function sendMessage() {
+        const message = document.getElementById('chatInput').value;
+        if (message.trim() === "") return;
+
+        console.log("📤 Sending message to DB:", message);
+
+        $.post('@Url.Action("SaveChat", "Vendor")', {
+            message: message,
+            requestNumber: requestNumber,
+            ClientGstin: clientGstin
+        }, function () {
+            console.log("✅ Message saved to DB. Broadcasting via SignalR...");
+            connection.invoke("SendMessageToGroup", requestNumber, userName, message)
+                .then(() => console.log("✅ Message broadcasted."))
+                .catch(err => console.error("❌ Failed to send SignalR message:", err.toString()));
+
+            document.getElementById('chatInput').value = '';
+        });
+    }
+
+    function markAsRead(requestNumber, clientGstin, isCurrentUser) 
+    {
+        var baseUrl = '@Url.Content("~/")';
+        let markAsReadUrl = baseUrl + "Vendor/MarkAsRead";
+        console.log("🔵 Mark as read URL:", markAsReadUrl);
+
+        if (!isCurrentUser) 
+        {
+            console.log("👁 Marking admin message as read...");
+
+            fetch(markAsReadUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `requestNumber=${encodeURIComponent(requestNumber)}&gstin=${encodeURIComponent(clientGstin)}`
+            }).then(response => {
+                if (!response.ok) {
+                    console.error("❌ Failed to mark message as read.");
+                } else {
+                    console.log("✅ Admin message marked as read.");
+                }
+            }).catch(error => {
+                console.error("❌ Error marking as read:", error);
+            });
+        }
+    }
+    
+    document.getElementById('chatInput').addEventListener('keypress', function (e) 
+    {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    function scrollToBottom() {
+        const box = document.getElementById('chatBox');
+        box.scrollTop = box.scrollHeight;
+    }
+
+    // In ConversationChat.cshtml page:
+    window.addEventListener("load", function () {
+        const requestNo = "@ViewBag.RequestNumber";
+        const chatLink = parent.document?.querySelector(`#chat-${requestNo}`);
+        if (chatLink) {
+            const indicator = chatLink.querySelector(".chat-indicator");
+            if (indicator) indicator.style.display = "none";
+        }
+    });
+
+    scrollToBottom();
+</script>

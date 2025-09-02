@@ -1,0 +1,237 @@
+{
+  "data": {
+    "b2b": [
+      {
+        "ctin": "33AAGCB1286Q2ZA",
+        "cfs": "N",
+        "cfs3b": "N",
+        "flprdr1": "Jan-25",
+        "inv": [
+          {
+            "val": 20000,
+            "itms": [
+              {
+                "num": 1,
+                "itm_det": {
+                  "csamt": 500,
+                  "rt": 5,
+                  "txval": 20000,
+                  "iamt": 1000
+                }
+              }
+            ],
+            "inv_typ": "R",
+            "pos": "01",
+            "idt": "11-01-2025",
+            "rchrg": "N",
+            "diff_percent": 0.65,
+            "inum": "LAKSHMI251",
+            "chksum": "checksum1"
+          },
+          {
+            "val": 15000,
+            "itms": [
+              {
+                "num": 1,
+                "itm_det": {
+                  "csamt": 300,
+                  "rt": 5,
+                  "txval": 15000,
+                  "iamt": 750
+                }
+              }
+            ],
+            "inv_typ": "R",
+            "pos": "02",
+            "idt": "12-01-2025",
+            "rchrg": "N",
+            "diff_percent": 0.65,
+            "inum": "LAKSHMI252",
+            "chksum": "checksum2"
+          },
+          {
+            "val": 10000,
+            "itms": [
+              {
+                "num": 1,
+                "itm_det": {
+                  "csamt": 200,
+                  "rt": 5,
+                  "txval": 10000,
+                  "iamt": 500
+                }
+              }
+            ],
+            "inv_typ": "R",
+            "pos": "03",
+            "idt": "13-01-2025",
+            "rchrg": "N",
+            "diff_percent": 0.65,
+            "inum": "LAKSHMI253",
+            "chksum": "checksum3"
+          },
+          {
+            "val": 5000,
+            "itms": [
+              {
+                "num": 1,
+                "itm_det": {
+                  "csamt": 100,
+                  "rt": 5,
+                  "txval": 5000,
+                  "iamt": 250
+                }
+              }
+            ],
+            "inv_typ": "R",
+            "pos": "04",
+            "idt": "14-01-2025",
+            "rchrg": "N",
+            "diff_percent": 0.65,
+            "inum": "LAKSHMI254",
+            "chksum": "checksum4"
+          },
+          {
+            "val": 12000,
+            "itms": [
+              {
+                "num": 1,
+                "itm_det": {
+                  "csamt": 240,
+                  "rt": 5,
+                  "txval": 12000,
+                  "iamt": 600
+                }
+              }
+            ],
+            "inv_typ": "R",
+            "pos": "05",
+            "idt": "15-01-2025",
+            "rchrg": "N",
+            "diff_percent": 0.65,
+            "inum": "LAKSHMI255",
+            "chksum": "checksum5"
+          },
+          {
+            "val": 18000,
+            "itms": [
+              {
+                "num": 1,
+                "itm_det": {
+                  "csamt": 360,
+                  "rt": 5,
+                  "txval": 18000,
+                  "iamt": 900
+                }
+              }
+            ],
+            "inv_typ": "R",
+            "pos": "06",
+            "idt": "16-01-2025",
+            "rchrg": "N",
+            "diff_percent": 0.65,
+            "inum": "LAKSHMI256",
+            "chksum": "checksum6"
+          },
+          {
+            "val": 22000,
+            "itms": [
+              {
+                "num": 1,
+                "itm_det": {
+                  "csamt": 440,
+                  "rt": 5,
+                  "txval": 22000,
+                  "iamt": 1100
+                }
+              }
+            ],
+            "inv_typ": "R",
+            "pos": "07",
+            "idt": "17-01-2025",
+            "rchrg": "N",
+            "diff_percent": 0.65,
+            "inum": "LAKSHMI257",
+            "chksum": "checksum7"
+          },
+          {
+            "val": 25000,
+            "itms": [
+              {
+                "num": 1,
+                "itm_det": {
+                  "csamt": 500,
+                  "rt": 5,
+                  "txval": 25000,
+                  "iamt": 1250
+                }
+              }
+            ],
+            "inv_typ": "R",
+            "pos": "08",
+            "idt": "18-01-2025",
+            "rchrg": "N",
+            "diff_percent": 0.65,
+            "inum": "LAKSHMI258",
+            "chksum": "checksum8"
+          },
+          {
+            "val": 30000,
+            "itms": [
+              {
+                "num": 1,
+                "itm_det": {
+                  "csamt": 600,
+                  "rt": 5,
+                  "txval": 30000,
+                  "iamt": 1500
+                }
+              }
+            ],
+            "inv_typ": "R",
+            "pos": "09",
+            "idt": "19-01-2025",
+            "rchrg": "N",
+            "diff_percent": 0.65,
+            "inum": "LAKSHMI259",
+            "chksum": "checksum9"
+          },
+          {
+            "val": 28000,
+            "itms": [
+              {
+                "num": 1,
+                "itm_det": {
+                  "csamt": 560,
+                  "rt": 5,
+                  "txval": 28000,
+                  "iamt": 1400
+                }
+              }
+            ],
+            "inv_typ": "R",
+            "pos": "10",
+            "idt": "20-01-2025",
+            "rchrg": "N",
+            "diff_percent": 0.65,
+            "inum": "LAKSHMI260",
+            "chksum": "checksum10"
+          }
+        ]
+      }
+    ]
+  },
+  "status_cd": "1",
+  "status_desc": "GSTR request succeeds",
+  "header": {
+    "gst_username": "MH_NT2.1642",
+    "state_cd": "27",
+    "ip_address": "14.98.237.54",
+    "client_id": "GSTS36731818-d2d3-4036-816c-d3e559eb1dde",
+    "client_secret": "GSTSa012637b-1daa-43be-aa1f-85d83ce132fb",
+    "txn": "2879266126c546d68951a50ec20a3d35",
+    "traceparent": "00-293b679f858d0bd7d9cac10ce8e233dd-8c2fdcae90d4f260-00",
+    "ret_period": "012025",
+    "gstin": "27AAGCB1286Q2Z3"
+  }
+}

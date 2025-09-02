@@ -1,0 +1,155 @@
+﻿
+.gst-comparison-table {
+    width: 60%;
+    border-collapse: collapse;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    background-color: #f8f9fa;
+}
+
+    .gst-comparison-table th,
+    .gst-comparison-table td {
+        padding: 2px;
+        text-align: left;
+    }
+
+    .gst-comparison-table th {
+        font-weight: bold;
+    }
+
+.button-container {
+    position: fixed;
+    bottom: 50px;
+    right: 70px;
+    display: flex;
+    gap: 15px;
+    z-index: 999;
+}
+
+.action-button {
+    padding: 12px 25px;
+    font-size: 16px;
+    background-color: #007BFF;
+    border: none;
+    color: white;
+    border-radius: 25px;
+    transition: none;
+}
+
+.form-control {
+    width: 600px;
+    padding: 8px 12px;
+    
+}
+
+.file-input {
+    width: 600px;
+    padding: 8px 12px;
+    margin-bottom: 0px;
+}
+
+.label-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    
+}
+
+/* Spinner Animation */
+.spinner {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #007BFF;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+/* Error message scrollbar styling */
+.error-message-scroll {
+    width: 75%;
+    height: 100px; /* Fixed height for scrollbar to appear */
+    overflow-y: auto; /* Vertical scrollbar only when content overflows */
+    padding: 2px; /* Ensure padding for better look */
+}
+
+.error-message-scroll-SR {
+    width: 75%;
+    height: 55px; /* Fixed height for scrollbar to appear */
+    overflow-y: auto; /* Vertical scrollbar only when content overflows */
+    padding: 2px; /* Ensure padding for better look */
+}
+
+.custom-file-input {
+    display: none;
+}
+
+.custom-file-label {
+    display: inline-block;
+    padding: 10px;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.custom-file-upload {
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 60%;
+}
+
+    .custom-file-upload input[type="text"] {
+        flex-grow: 1;
+        padding: 4px;
+        border: 1px solid #ccc;
+        border-radius: 4px 0 0 4px;
+        background: #f9f9f9;
+        cursor: pointer;
+    }
+
+    .custom-file-upload button {
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-left: none;
+        border-radius: 0 4px 4px 0;
+        background: #007bff;
+        color: white;
+        cursor: pointer;
+    }
+
+        .custom-file-upload button:hover {
+            background: #0056b3;
+        }
+
+    .custom-file-upload input[type="file"] {
+        display: none;
+    }
+
+.text-danger {
+    color: #dc3545;
+    font-size: 0.875rem;
+}
+
+#otpModal .modal-body input#otpInput {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+@media (min-width: 1200px) {
+    .container, .container-lg, .container-md, .container-sm, .container-xl {
+        max-width: 1300px;
+    }
+}

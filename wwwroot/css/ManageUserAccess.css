@@ -1,0 +1,136 @@
+﻿.user-access-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 10px;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+.user-list-panel {
+    width: 400px;
+}
+
+.legend {
+    margin-bottom: 10px;
+}
+
+.legend-box {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+.admin-color {
+    background-color: #d0e3ff;
+}
+
+.client-color {
+    background-color: #fff5cc;
+}
+
+#userList {
+    list-style: none;
+    padding: 0;
+    max-height: 330px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+.user-item {
+    padding: 8px 10px;
+    cursor: pointer;
+    margin-bottom: 2px;
+    border-radius: 4px;
+}
+
+.admin-user {
+    background-color: #d0e3ff;
+}
+
+.client-user {
+    background-color: #fff5cc;
+}
+
+.access-form-panel {
+    width: 300px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+    margin-top: 15px;
+}
+
+    .form-group input {
+        width: 100%;
+        padding: 6px 8px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+    }
+
+.action-btn {
+    background-color: #007bff;
+    color: white;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 500px;
+}
+
+.modal-buttons button {
+    margin-top: 10px;
+    padding: 6px 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+}
+
+.search-box {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.selected-user {
+    border: 2px solid #007bff;
+    background-color: lightgreen !important;
+}
+
+.highlight {
+    background-color: yellow;
+    font-weight: bold;
+}
+
+/* Responsive layout for container */
+@media (min-width: 1200px) {
+    .container, .container-lg, .container-md, .container-sm, .container-xl {
+        max-width: 1300px;
+    }
+}

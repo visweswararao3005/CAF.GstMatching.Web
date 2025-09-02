@@ -1,0 +1,255 @@
+﻿@{
+    ViewData["Title"] = "Razorpay Payment";
+    var perMonthAmount = ViewBag.PricePerMonth ?? 500; // From appsettings
+    var plans = ViewBag.Plans ?? new List<int> { 1, 2, 3, 6, 12 }; // From appsettings
+    var userValidUpto = ViewBag.userValidUpto;
+
+    //if uservalidupto is null  then message
+    //if uservalidupto is less than todays date then message
+    //if uservalidupto is greater than todays date then message
+    string popupTitle = "";
+    string popupMessage = "";
+    string popupType = ""; // for styling if needed
+
+    if (userValidUpto == null)
+    {
+        popupTitle = "Welcome!";
+        popupMessage = "You do not have an active subscription yet. Start your plan today to access all features.";
+        popupType = "info";
+    }
+    else if (userValidUpto < DateTime.Today)
+    {
+        popupTitle = "Subscription Expired";
+        popupMessage = $"Your subscription has expired on {((DateTime)userValidUpto).ToString("dd-MMM-yyyy")}. Renew now to continue using the application.";
+        popupType = "error";
+    }
+    else if (userValidUpto >= DateTime.Today)
+    {
+        popupTitle = "Subscription Active";
+        popupMessage = $"You already have an active subscription until {((DateTime)userValidUpto).ToString("dd-MMM-yyyy")}. Extend now to enjoy uninterrupted access.";
+        popupType = "success";
+    }
+
+}
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+<style>
+    .payment-container {
+        max-width: 450px;
+        margin: 50px auto;
+        padding: 25px;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        font-family: Arial, sans-serif;
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    select, button {
+        width: 100%;
+        padding: 12px;
+        font-size: 1em;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        margin-bottom: 15px;
+    }
+
+    .total-amount {
+        text-align: center;
+        font-size: 1.4em;
+        font-weight: bold;
+        margin: 20px 0;
+        color: #3399cc;
+    }
+
+    .btn-pay {
+        background: #3399cc;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+
+        .btn-pay:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+    .loader {
+        display: none;
+        text-align: center;
+        margin-top: 10px;
+    }
+
+    .alert {
+        padding: 10px;
+        margin-top: 15px;
+        border-radius: 6px;
+        display: none;
+    }
+
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+    }
+</style>
+
+<div class="payment-container">
+    <h2><i class="fas fa-credit-card"></i> Choose Subscription Plan</h2>
+
+    <select id="planSelect">
+        <option value="">-- Select Plan --</option>
+        @foreach (var months in plans)
+        {
+            var total = months * perMonthAmount;
+            <option value="@months">
+                @months Month@(months > 1 ? "s" : "") - ₹@total
+            </option>
+        }
+    </select>
+
+    <div class="total-amount">
+        Total: ₹<span id="totalPrice">0</span>
+    </div>
+
+    <button id="payBtn" class="btn-pay" disabled>Pay Now</button>
+
+    <div class="loader">
+        <i class="fas fa-spinner fa-spin"></i> Processing...
+    </div>
+
+    <div id="paymentMessage" class="alert"></div>
+</div>
+
+<div id="paymentPopup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+     background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:#fff; padding:20px; border-radius:8px; max-width:300px; text-align:center;">
+        <h3 id="popupTitle">Payment Status</h3>
+        <p id="popupMessage"></p>
+        <button id="popupOkBtn" style="padding:8px 20px; background:#3399cc; color:#fff; border:none; border-radius:6px; cursor:pointer;">
+            OK
+        </button>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+    let popupTitleFromServer = '@popupTitle';
+    let popupMessageFromServer = '@popupMessage';
+
+    $(document).ready(function () {
+        if (popupMessageFromServer && popupMessageFromServer.trim() !== "") {
+            // Show popup automatically on page load
+            showPopup(popupTitleFromServer, popupMessageFromServer);
+        }
+    });
+
+    let perMonthAmount = parseFloat('@perMonthAmount');
+    let selectedMonths = 0;
+    let payBtn = $('#payBtn');
+    let totalPriceDisplay = $('#totalPrice');
+    let loader = $('.loader');
+    let messageBox = $('#paymentMessage');
+   
+    $('#planSelect').change(function () {
+        selectedMonths = parseInt($(this).val()) || 0;
+        let total = selectedMonths * perMonthAmount;
+        totalPriceDisplay.text(total);
+        payBtn.prop('disabled', total <= 0);
+    });
+
+    payBtn.click(function () {
+        if (selectedMonths <= 0) {
+            showMessage('Please select a subscription plan.', 'error');
+            return;
+        }
+
+        loader.show();
+        payBtn.prop('disabled', true);
+
+        $.post('@Url.Action("CreateOrder", "Payment")',
+            { amount: selectedMonths * perMonthAmount , months: selectedMonths },
+            function (order) {
+                loader.hide();
+                payBtn.prop('disabled', false);
+
+                var options = {
+                    "key": order.key,
+                    "amount": order.amount * 100,
+                    "currency": order.currency,
+                    "name": order.userName,
+                    "description": selectedMonths + " Month Subscription",
+                    "order_id": order.orderId,
+                    "handler": function (response) {
+                        verifyPayment(response);
+                    },
+                    "prefill": {
+                        "name": order.userName,
+                        "email": order.userEmail,
+                        "contact": order.userPhone
+                    },
+                    "theme": { "color": "#3399cc" }
+                };
+                new Razorpay(options).open();
+            }
+        ).fail(function () {
+            loader.hide();
+            payBtn.prop('disabled', false);
+            showMessage('Error creating order. Please try again.', 'error');
+        });
+    });
+
+    function verifyPayment(response) {
+        loader.show();
+        let baseUrl = '@Url.Content("~/")';
+        fetch(baseUrl + "Payment/VerifyPayment", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(response)
+        }).then(res => res.json())
+        .then(data => {
+            loader.hide();
+
+            if (data.status.toLowerCase() === 'success') {
+                showPopup("Success", "Your payment was successful!", '@Url.Action("OpenTaskCSV", "Admin")');
+            } else {
+                showPopup("Error", "Payment failed. Please try again.");
+            }
+
+        }).catch(() => {
+            loader.hide();
+            showPopup("Error", "Payment verification failed. Please try again.");
+        });
+    }
+
+    function showPopup(title, message, redirectUrl) {
+        $("#popupTitle").text(title);
+        $("#popupMessage").text(message);
+        $("#paymentPopup").css("display", "flex").hide().fadeIn();
+
+        $("#popupOkBtn").off("click").on("click", function () {
+            $("#paymentPopup").fadeOut();
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            }
+        });
+    }
+
+    function showMessage(text, type) {
+        messageBox.removeClass('alert-success alert-error')
+                  .addClass(type === 'success' ? 'alert-success' : 'alert-error')
+                  .text(text).fadeIn();
+        setTimeout(() => messageBox.fadeOut(), 4000);
+    }
+</script>

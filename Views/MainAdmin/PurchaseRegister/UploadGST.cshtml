@@ -1,0 +1,386 @@
+﻿@{
+    ViewData["Title"] = "Upload GST File";
+}
+
+@{
+    var responseDict = ViewBag.ResponseDict as Dictionary<string, string> ?? new Dictionary<string, string>();
+    var pendingTickets = ViewBag.PendingTickets as List<dynamic> ?? new List<dynamic>();
+    var pendingCount = ViewBag.PendingCount ?? 0;
+    var completedCount = ViewBag.CompletedCount ?? 0;
+    var RequestNo = ViewBag.RequestNo ?? null;
+    var FinancialYear = ViewBag.FY;
+    var PeriodType = ViewBag.PT;
+    var Period = ViewBag.P;
+}
+
+@{
+    <link rel="stylesheet" href="~/css/UploadGST.css" />
+}
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 20px; text-align: center;">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+</div>
+
+<div class="container mt-1">
+    <h2 class="text-primary">Upload GST Purchase Register Invoice File</h2>
+
+    <form asp-action="UploadGST" asp-controller="Admin" method="post" enctype="multipart/form-data" id="uploadForm">
+        <input type="hidden" id="hiddenFinancialYear" name="financialYear" />
+        <input type="hidden" id="hiddenPeriodType" name="periodtype" />
+        <input type="hidden" id="hiddenPeriod" name="period" />
+        <input type="hidden" id="RequestNo" name="RequestNo" value="@RequestNo" />
+
+        <!-- Financial Year and Period Type side by side -->
+        <div class="form-group row">
+            <div class="col-md-6">
+                <label for="financialYear">@(responseDict.ContainsKey("lblFinancialYear") ? responseDict["lblFinancialYear"] : "Financial Year")</label>
+                <select class="form-control dropdown-with-arrow" id="financialYear" name="financialYear" required onchange="updatePeriodOptions()">
+                    <option value="">@(responseDict.ContainsKey("lblSelectFinancialYear") ? responseDict["lblSelectFinancialYear"] : "Select Financial Year")</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="periodtype">@(responseDict.ContainsKey("lblPeriodType") ? responseDict["lblPeriodType"] : "Period Type")</label>
+                <select class="form-control dropdown-with-arrow" id="periodtype" name="periodtype" required onchange="updatePeriodOptions()">
+                    <option value="">@(responseDict.ContainsKey("lblSelectPeriodType") ? responseDict["lblSelectPeriodType"] : "Select Period Type")</option>
+                    <option value="Monthly">Monthly</option>
+                    <option value="Quarterly">Quarterly</option>
+                </select>
+            </div>
+        </div>
+        <!-- Period -->
+        <div class="form-group">
+            <label for="period">@(responseDict.ContainsKey("lblPeriod") ? responseDict["lblPeriod"] : "Period")</label>
+            <select class="form-control dropdown-with-arrow" id="period" name="period" required>
+                <option value="">@(responseDict.ContainsKey("lblSelectPeriod") ? responseDict["lblSelectPeriod"] : "Select Period")</option>
+            </select>
+        </div>
+
+        <!-- File Upload with custom UI -->
+        <div class="form-group">
+            <div class="label-container">
+                <label for="gstFile" class="d-inline-block">Select GST Purchase Register Invoice File :</label>
+                <a href="@Url.Action("DownloadSampleFileCSV", "Vendor")">
+                    PRSampleInvoice.csv
+                </a>
+                <a href="@Url.Action("DownloadSampleFileXLS", "Vendor")">
+                    PRSampleInvoice.xls
+                </a>
+                <a href="@Url.Action("DownloadSampleFileXLSX", "Vendor")">
+                    PRSampleInvoice.xlsx
+                </a>
+            </div>
+            <div class="custom-file-upload">
+                <input type="text" id="fileNameDisplay" readonly placeholder="No file selected" />
+                <button type="button" onclick="document.getElementById('gstFile').click()">Browse</button>
+                <input type="file" name="gstFile" id="gstFile" accept=".csv, .xls, .xlsx" />
+            </div>
+            <div id="purchaseFileError" class="text-danger" style="display: none;">Please select a file.</div>
+        </div>
+
+        <!-- Upload Button -->
+        <div class="form-group mt-1">
+            <button type="submit" class="btn btn-primary">Upload</button>
+        </div>
+    </form>
+
+    <!-- Success Message -->
+    @if (ViewBag.Message != null && ViewBag.ErrorMessage == null && ViewBag.Edit == "No")
+    {
+        <div id="successModal" class="modal">
+            <div class="modal-content" id="modalContent">
+                ✅ Request Generated: <strong>@ViewBag.Message</strong>
+                <br>Track your GST comparison using this request number.
+                <button class="modal-button" onclick="closeModal()">OK</button>
+            </div>
+        </div>
+    }
+
+    @if (ViewBag.Edit == "Yes" && ViewBag.ErrorMessage == null)
+    {
+        <div id="successModal" class="modal">
+            <div class="modal-content" id="modalContent">
+                ✅ Request Updated: <strong>@ViewBag.Message</strong>
+                <br>Track your GST comparison using this request number.
+                <button class="modal-button" onclick="closeModal()">OK</button>
+            </div>
+        </div>
+    }
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger mt-1 error-message-scroll">
+            @Html.Raw(((string)ViewBag.ErrorMessage).Replace("\n", "<br/>"))
+        </div>
+    }
+
+    <!-- Back Button -->
+    <!-- <div class="back-button">
+        <button class="btn-back" onclick="clearFormValuesAndRedirect()">
+            @(responseDict.ContainsKey("btnBackToDashboard") ? responseDict["btnBackToDashboard"] : "Back to Dashboard")
+        </button>
+    </div> -->
+</div>
+
+@section Scripts {
+    <script>
+        // Function to populate financial year options dynamically
+        function populateFinancialYears() {
+            const selectElement = document.getElementById('financialYear');
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear();
+            const currentMonth = currentDate.getMonth(); // 0-based (0 = Jan, 3 = Apr, etc.)
+
+            // Determine the current financial year
+            // If month is April (3) or later, current financial year starts this year
+            const currentFinancialYearStart = currentMonth >= 3 ? currentYear : currentYear - 1;
+
+            // Clear existing options except the placeholder
+            selectElement.innerHTML = '<option value="">@(responseDict.ContainsKey("lblSelectFinancialYear") ? responseDict["lblSelectFinancialYear"] : "Select Financial Year")</option>';
+
+            // Add financial years from 2024-2025 up to current financial year
+            for (let startYear = 2024; startYear <= currentFinancialYearStart; startYear++) {
+                const optionValue = `${startYear}-${startYear + 1}`;
+                const optionText = `Apr ${startYear} - Mar ${startYear + 1}`;
+                const option = document.createElement('option');
+                option.value = optionValue;
+                option.text = optionText;
+                selectElement.appendChild(option);
+            }
+
+            // If server-side FinancialYear exists, set it
+            const serverFinancialYear = '@FinancialYear';
+            if (serverFinancialYear) {
+                selectElement.value = serverFinancialYear;
+                updatePeriodOptions(); // Update period options if FY is set
+            }
+        }
+
+        // Function to save form values to sessionStorage
+        function saveFormValues() {
+            const formData = {
+                financialYear: document.getElementById("financialYear").value,
+                periodType: document.getElementById("periodtype").value,
+                period: document.getElementById("period").value,
+                gstFileName: document.getElementById("fileNameDisplay").value
+            };
+            sessionStorage.setItem("formValues", JSON.stringify(formData));
+        }
+
+        // Function to update file name display
+        function updateFileNameDisplay(fileName) {
+            const fileNameDisplay = document.getElementById("fileNameDisplay");
+            fileNameDisplay.value = fileName || "No file selected";
+        }
+
+        // Function to load form values from sessionStorage
+        function loadFormValues() {
+            const savedValues = sessionStorage.getItem("formValues");
+            if (savedValues) {
+                const formData = JSON.parse(savedValues);
+                document.getElementById("financialYear").value = formData.financialYear || "";
+                document.getElementById("periodtype").value = formData.periodType || "";
+                if (formData.financialYear && formData.periodType) {
+                    updatePeriodOptions();
+                    document.getElementById("period").value = formData.period || "";
+                }
+                updateFileNameDisplay(formData.gstFileName || "");
+            } else if (!savedValues && serverFinancialYear && serverPeriodType && serverFileName) {
+                document.getElementById("financialYear").value = serverFinancialYear;
+                document.getElementById("periodtype").value = serverPeriodType;
+                updatePeriodOptions();
+                document.getElementById("period").value = serverPeriod;
+                updateFileNameDisplay(serverFileName);
+            }
+        }
+
+        // Update period options function
+        function updatePeriodOptions() {
+            var fy = document.getElementById("financialYear").value;
+            var periodType = document.getElementById("periodtype").value;
+            var periodDropdown = document.getElementById("period");
+
+            periodDropdown.innerHTML = '<option value="">Select Period</option>';
+
+            if (!fy || !periodType) return;
+
+            let fySplit = fy.split("-");
+            let startYear = parseInt(fySplit[0]);
+            let endYear = startYear + 1;
+
+            if (periodType === "Monthly") {
+                const months = [
+                    "Apr", "May", "Jun", "Jul", "Aug", "Sep",
+                    "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"
+                ];
+
+                months.forEach((month, index) => {
+                    let year = (index < 9) ? startYear : endYear;
+                    let display = `${month}-${year.toString().slice(-2)}`;
+                    periodDropdown.innerHTML += `<option value="${display}">${display}</option>`;
+                });
+            } else if (periodType === "Quarterly") {
+                const quarters = [
+                    { name: "Q1", months: "Apr-Jun" },
+                    { name: "Q2", months: "Jul-Sep" },
+                    { name: "Q3", months: "Oct-Dec" },
+                    { name: "Q4", months: "Jan-Mar" }
+                ];
+
+                quarters.forEach((q, index) => {
+                    let year = (index < 3) ? startYear : endYear;
+                    let display = `${q.name}-${year.toString().slice(-2)}`;
+                    periodDropdown.innerHTML += `<option value="${display}">${q.months} (${display})</option>`;
+                });
+            }
+        }
+
+        // Form submission handler with validation
+        document.querySelector("#uploadForm").addEventListener("submit", function (event) {
+            var fileInput = document.getElementById("gstFile");
+            var fileError = document.getElementById("purchaseFileError");
+            if (fileInput.files.length === 0) {
+                event.preventDefault();
+                fileError.style.display = "block";
+                return;
+            } else {
+                fileError.style.display = "none";
+                document.getElementById('loadingOverlay').style.display = 'block';
+            }
+
+            saveFormValues();
+
+            document.getElementById("hiddenFinancialYear").value = document.getElementById("financialYear").value;
+            document.getElementById("hiddenPeriodType").value = document.getElementById("periodtype").value;
+            document.getElementById("hiddenPeriod").value = document.getElementById("period").value;
+        });
+
+        // Get values from server-side ViewBag
+        const serverFinancialYear = '@ViewBag.FinancialYear';
+        const serverPeriodType = '@ViewBag.PeriodType';
+        const serverPeriod = '@ViewBag.TxnPeriod';
+        const serverFileName = '@ViewBag.FileName';
+
+        // Load saved values and handle file input changes
+        document.addEventListener("DOMContentLoaded", function () {
+            // Populate financial years on page load
+            populateFinancialYears();
+
+            const hasError = @Json.Serialize(ViewBag.ErrorMessage != null);
+            const hasSuccess = document.querySelector("#modalContent");
+            if (hasError) {
+                loadFormValues();
+            }
+            else if (hasSuccess) {
+                loadFormValues();
+            }
+            else if (serverFinancialYear && serverPeriodType && serverPeriod && serverFileName) {
+                loadFormValues();
+            }
+            else {
+                sessionStorage.removeItem("formValues");
+                updateFileNameDisplay("");
+            }
+
+            document.getElementById("gstFile").addEventListener("change", function () {
+                const fileName = this.files[0]?.name || "";
+                updateFileNameDisplay(fileName);
+                saveFormValues();
+            });
+
+            document.getElementById("fileNameDisplay").addEventListener("click", function () {
+                document.getElementById("gstFile").click();
+            });
+
+            var modal = document.getElementById('successModal');
+            if (modal) {
+                console.log('Modal displayed');
+                modal.style.display = 'flex';
+            }
+        });
+
+        // Save values whenever a field changes
+        document.getElementById("financialYear").addEventListener("change", saveFormValues);
+        document.getElementById("periodtype").addEventListener("change", saveFormValues);
+        document.getElementById("period").addEventListener("change", saveFormValues);
+
+        // Clear sessionStorage and redirect
+        // function clearFormValuesAndRedirect() {
+        //     sessionStorage.removeItem("formValues");
+        //     updateFileNameDisplay("");
+        //     window.location.href = '@Url.Action("DashboardView", "Vendor")';
+        // }
+
+        // Close modal and clear form
+        function closeModal() {
+            try {
+                var modal = document.getElementById('successModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                    console.log('Modal closed');
+                }
+                var form = document.getElementById('uploadForm');
+                if (form) {
+                    form.reset();
+                }
+                window.location.href = '@Url.Action("OpenRequestsCSV", "Admin")';
+            } catch (error) {
+                console.error('Error in closeModal:', error);
+            }
+        }
+
+        // Draggable modal functionality
+        (function () {
+            var modalContent = document.getElementById('modalContent');
+            if (modalContent) {
+                var isDragging = false;
+                var currentX;
+                var currentY;
+                var initialX;
+                var initialY;
+                var xOffset = 0;
+                var yOffset = 0;
+
+                modalContent.addEventListener('mousedown', startDragging);
+
+                function startDragging(e) {
+                    initialX = e.clientX - xOffset;
+                    initialY = e.clientY - yOffset;
+
+                    if (e.target === modalContent || e.target.tagName === 'P') {
+                        isDragging = true;
+                    }
+
+                    document.addEventListener('mousemove', drag);
+                    document.addEventListener('mouseup', stopDragging);
+                }
+
+                function drag(e) {
+                    if (isDragging) {
+                        e.preventDefault();
+                        currentX = e.clientX - initialX;
+                        currentY = e.clientY - initialY;
+
+                        xOffset = currentX;
+                        yOffset = currentY;
+
+                        setTranslate(currentX, currentY, modalContent);
+                    }
+                }
+
+                function setTranslate(xPos, yPos, el) {
+                    el.style.transform = `translate(${xPos}px, ${yPos}px)`;
+                }
+
+                function stopDragging() {
+                    isDragging = false;
+                    document.removeEventListener('mousemove', drag);
+                    document.removeEventListener('mouseup', stopDragging);
+                }
+            }
+        })();
+    </script>
+}

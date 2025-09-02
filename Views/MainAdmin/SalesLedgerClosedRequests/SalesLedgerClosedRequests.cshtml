@@ -1,0 +1,138 @@
+﻿@{
+	ViewData["Title"] = "Sales Ledger Closed Requests";
+	var responseDict = ViewBag.ResponseDict as Dictionary<string, string> ?? new Dictionary<string, string>();
+	var tickets = ViewBag.Tickets as List<CAF.GstMatching.Models.SalesLedgerTicketsModel> ?? new List<CAF.GstMatching.Models.SalesLedgerTicketsModel>();
+
+	// Sort tickets by Request_Date in descending order (latest first) and filter for pending status
+	if (tickets != null)
+	{
+		tickets = tickets.OrderByDescending(t => t.RequestCompleteDate)
+						.ToList();
+	}
+
+	// Calculate default dates
+	var today = DateTime.Today;
+	var yesterday = today.AddDays(-1);
+	// Format dates as yyyy-MM-dd for HTML date input
+	var defaultFromDate = yesterday.ToString("yyyy-MM-dd");
+	var defaultToDate = today.ToString("yyyy-MM-dd");
+	// Explicitly convert ViewBag values to string, handling null or non-string types
+	var fromDate = ViewBag.FromDate != null ? ViewBag.FromDate.ToString("yyyy-MM-dd") : defaultFromDate;
+	var toDate = ViewBag.ToDate != null ? ViewBag.ToDate.ToString("yyyy-MM-dd") : defaultToDate;
+}
+
+@{
+	<link rel="stylesheet" href="~/css/ClosedTask.css" />
+}
+
+<div class="dashboard-body">
+	<!-- Current Requests Header and Date Filter in one line -->
+	<div class="header-filter-container">
+		<h4>Sales Register - Closed Requests</h4>
+		<div class="date-filter">
+			<label for="fromDate">From Date:</label>
+			<input type="date" id="fromDate" name="fromDate" value="@fromDate" max="@DateTime.Today.ToString("yyyy-MM-dd")">
+			<label for="toDate">To Date:</label>
+			<input type="date" id="toDate" name="toDate" value="@toDate" max="@DateTime.Today.ToString("yyyy-MM-dd")">
+			<button class="btn-search" onclick="filterTickets()">Search</button>
+		</div>
+	</div>
+	<!-- Table container with internal scroll -->
+	<div class="completed-tickets">
+		@if (tickets != null && tickets.Any())
+		{
+			<table class="ticket-table">
+				<thead>
+					<tr>
+						<th style="width: 6%">@(responseDict.ContainsKey("lblSLNo") ? responseDict["lblSLNo"] : "SL No")</th> <!-- New SL No column -->
+						<th style="width: 13%">@(responseDict.ContainsKey("lblRequestNumber") ? responseDict["lblRequestNumber"] : "Request Number")</th>
+						@*<th style="width: 9%">@(responseDict.ContainsKey("lblVendorName") ? responseDict["lblVendorName"] : "Vendor Name")</th>*@
+
+						<th style="width: 8%">@(responseDict.ContainsKey("lblVendorName") ? responseDict["lblVendorName"] : "Invoice File Name")</th>
+						<th style="width: 8%">@(responseDict.ContainsKey("lblVendorName") ? responseDict["lblVendorName"] : "EInvoice File Name")</th>
+						<th style="width: 8%">@(responseDict.ContainsKey("lblVendorName") ? responseDict["lblVendorName"] : "EWayBill File Name")</th>
+
+						<th style="width: 10%">@(responseDict.ContainsKey("lblCreatedDate") ? responseDict["lblCreatedDate"] : "Created Date and Time")</th>
+						@*<th style="width: 10%">@(responseDict.ContainsKey("lblUploadDate") ? responseDict["lblUploadDate"] : "Upload Date and Time")</th>*@
+						<th style="width: 10%">@(responseDict.ContainsKey("lblUploadDate") ? responseDict["lblUploadDate"] : "Completion Date and Time")</th>
+						@*		<th style="width: 15%">@(responseDict.ContainsKey("lblFinancialYear") ? responseDict["lblFinancialYear"] : "Financial Year")</th> <!-- New Financial Year column -->
+						<th style="width: 10%">@(responseDict.ContainsKey("lblPeriodType") ? responseDict["lblPeriodType"] : "Period Type")</th> <!-- New Period Type column --> *@
+						<th style="width: 8%">@(responseDict.ContainsKey("lblPeriod") ? responseDict["lblPeriod"] : "Period")</th> <!-- Renamed to Period for consistency -->
+						<th style="width: 10%">@(responseDict.ContainsKey("lblStatus") ? responseDict["lblStatus"] : "Status")</th>
+					</tr>
+				</thead>
+				<tbody>
+					@{
+						int slNo = 1; // Counter for serial number
+					}
+					@foreach (var ticket in tickets)
+					{
+						<tr>
+							<td>@slNo</td> <!-- Display the serial number -->
+							<td>@ticket.RequestNumber
+
+							@*	<a href="@Url.Action("CompareSLCSVResults", "Admin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
+									@ticket.RequestNumber
+								</a>  *@
+
+							</td>
+							@*<td>@ticket.ClientName</td>*@
+							<td>
+								<a href="@Url.Action("ExportSLInvoiceFile", "Admin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
+									@ticket.FileName
+								</a>
+							</td>
+							<td>
+								<a href="@Url.Action("ExportSLEInvoiceFile", "Admin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
+									@ticket.EInvoiceFileName
+								</a>
+							</td>
+							<td>
+								<a href="@Url.Action("ExportSLEWayBillFile", "Admin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
+									@ticket.EWayBillFileName
+								</a>
+							</td>
+							<td>@ticket.RequestCreatedDate?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td>
+							@*<td>@ticket.RequestUpdatedDate?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td>*@
+							<td>@ticket.RequestCompleteDate?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td>
+							@*		<td>@ticket.FinancialYear</td> <!-- Assuming Financial_Year property exists -->
+							<td>@ticket.PeriodType</td> <!-- Assuming Period_Type property exists --> *@
+							<td>@ticket.Period</td>
+							<td>
+								<a href="@Url.Action("ExportSLReport", "Admin", new { requestNo = ticket.RequestNumber, fileName = ticket.FileName, ClientGSTIN = ticket.ClientGstin })"
+								   class="btn-analyse">
+									@(responseDict.ContainsKey("TicketStatus") ? responseDict["TicketStatus"] : @ticket.TicketStatus)
+								</a>
+							</td>
+						</tr>
+						slNo++; // Increment the counter after each row
+					}
+				</tbody>
+			</table>
+		}
+		else
+		{
+			@if (!string.IsNullOrEmpty(ViewBag.Error))
+			{
+				<p>@ViewBag.Error</p>
+			}
+			else
+			{
+				<p>@(responseDict.ContainsKey("msgNoPendingTickets") ? responseDict["msgNoPendingTickets"] : "No Closed Requests available for selected dates.")</p>
+			}
+		}
+	</div>
+	<div class="button-container">
+		<button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("SalesLedgerCurrentRequestsCSV", "Admin")'">Back to Current Requests</button>
+	</div>
+</div>
+
+<script>
+	function filterTickets() {
+		const fromDate = document.getElementById('fromDate').value;
+		const toDate = document.getElementById('toDate').value;
+
+		// Redirect with query parameters to persist dates
+		window.location.href = `@Url.Action("SalesLedgerClosedRequests", "Admin")` + `?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`;
+	}
+</script>

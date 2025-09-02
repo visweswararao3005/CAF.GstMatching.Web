@@ -1,0 +1,156 @@
+﻿body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Poppins', sans-serif;
+    background-color: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+}
+/*
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f8f9fa;
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    padding-top: 90px;
+    display: flex;
+    flex-direction: column;
+    scrollbar-width: none; 
+    -ms-overflow-style: none;
+}
+    */
+
+/* Main Content Container */
+.main-content {
+    flex: 1 0 auto; /* Takes available space, pushes footer down */
+    padding: 0;
+    width: 100%;
+    height: calc(100vh - 100px - 30px);
+}
+
+/* Full-Screen Image Styling */
+.full-screen-image {
+    width: 100%;
+    height: calc(100vh - 100px - 30px); /* Adjust based on header (60px) and footer (30px) heights */
+    position: relative;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center; /* Center the image horizontally */
+}
+
+.full-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ensures image covers the area without distortion */
+    object-position: center; /* Centers the image */
+    display: block;
+}
+
+/* Single Image Container */
+.single-image {
+    width: 90%; /* 90% width leaves 5% space on left and 5% on right */
+    height: calc(100vh - 100px - 30px);
+    overflow: hidden; /* Prevents image overflow */
+    max-width: 1200px; /* Cap the maximum width */
+    max-height: 800px; /* Cap the maximum height */
+}
+
+    .single-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Maintains aspect ratio and covers the container */
+        object-position: center;
+    }
+
+@media (min-width: 769px) and (max-width: 992px) { /* Tablets/Laptops */
+    .full-screen-image {
+        width: 100%;
+        height: calc(100vh - 100px - 30px); /* Adjust based on header (60px) and footer (30px) heights */
+        position: relative;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+    }
+    .single-image {
+        width: 90%; /* 90% width leaves 5% space on left and 5% on right */
+        height: calc(100vh - 100px - 30px);
+        overflow: hidden; /* Prevents image overflow */
+        max-width: 1200px; /* Cap the maximum width */
+        max-height: 800px; /* Cap the maximum height */
+    }
+    .single-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Maintains aspect ratio and covers the container */
+        object-position: center;
+    }
+}
+
+@media (min-width: 993px) and (max-width: 1200px) { /* Medium laptops */
+    .full-screen-image {
+        width: 100%;
+        height: calc(100vh - 100px - 30px); /* Adjust based on header (60px) and footer (30px) heights */
+        position: relative;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+    }
+    .single-image {
+        width: 90%; /* 90% width leaves 5% space on left and 5% on right */
+        height: calc(100vh - 100px - 30px);
+        overflow: hidden; /* Prevents image overflow */
+        max-width: 1200px; /* Cap the maximum width */
+        max-height: 800px; /* Cap the maximum height */
+    }
+    .single-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Maintains aspect ratio and covers the container */
+        object-position: center;
+    }
+}
+
+@media (min-width: 1201px) { /* Large laptops/desktops */
+    .full-screen-image {
+        width: 100%;
+        height: calc(100vh - 100px - 30px); /* Adjust based on header (60px) and footer (30px) heights */
+        position: relative;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+    }
+    .single-image {
+        width: 90%; /* 90% width leaves 5% space on left and 5% on right */
+        height: calc(100vh - 100px - 30px);
+        overflow: hidden; /* Prevents image overflow */
+        max-width: 1200px; /* Cap the maximum width */
+        max-height: 800px; /* Cap the maximum height */
+    }
+    .single-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Maintains aspect ratio and covers the container */
+        object-position: center;
+    }
+}
+
+/* Ensure footer and header don't interfere */
+.footer {
+    flex-shrink: 0;
+    height: 30px;
+    min-height: 30px;
+}
+
+.navbar {
+    flex-shrink: 0;
+    height: 90px; /* Fixed height for consistency */
+}

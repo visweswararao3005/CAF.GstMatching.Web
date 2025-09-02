@@ -1,0 +1,398 @@
+﻿@{
+    ViewData["Title"] = "Compare Sales Ledger GST File";
+    var responseDict = ViewBag.ResponseDict as Dictionary<string, string> ?? new Dictionary<string, string>();
+    var ticket = ViewBag.Ticket as CAF.GstMatching.Models.SalesLedgerTicketsModel;
+    var fromDate = ViewBag.fromDate;
+    var toDate = ViewBag.toDate;
+}
+@inject IConfiguration Configuration
+@{
+    var isAlpha = Configuration.GetValue<bool>("OtpInputConfig:IsAlpha");
+    var isNum = Configuration.GetValue<bool>("OtpInputConfig:IsNum");
+    var maxLength = Configuration.GetValue<int>("OtpInputConfig:MaxLength");
+    var retryMinutes = Configuration.GetValue<int>("ApiRetryTimeSettings:fifthApiRetryInMinutes");
+    var retrySeconds = retryMinutes * 60;
+    var initialTimeText = $"{retryMinutes:D2}:00"; // for initial display
+}
+@{
+    <link rel="stylesheet" href="~/css/CompareGST.css" />
+}
+
+<div class="container mt-1">
+    <h3 class="text-primary">You can compare Sales Ledger GST Files(Master API)</h3>
+
+    <table class="gst-comparison-table">
+        <tr>
+            <th>Request Number</th>
+            <td>@ticket?.RequestNumber</td>
+        </tr>
+        @* <tr>
+            <th>Client Name</th>
+            <td>@ticket?.ClientName</td>
+        </tr>
+        <tr>
+            <th>Client GSTIN</th>
+            <td>@ticket?.ClientGstin</td>
+        </tr>
+        <tr>
+            <th>Financial Year</th>
+            <td>@ticket?.FinancialYear</td>
+        </tr>
+        <tr>
+            <th>Period Type</th>
+            <td>@ticket?.PeriodType</td>
+        </tr> *@
+        <tr>
+            <th>Period</th>
+            <td>@ticket?.Period</td>
+        </tr>
+        <tr>
+            <th>Created Date and Time</th>
+            <td>@ticket?.RequestCreatedDate?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td>
+        </tr>
+        @*  <tr>
+            <th>Upload Date and Time</th>
+            <td>@ticket?.RequestUpdatedDate?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td>
+        </tr> *@
+        <tr>
+            <th>File Name</th>
+            <td>@ticket?.FileName</td>
+        </tr>
+    </table>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 20px; text-align: center;">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+</div>
+
+<input type="hidden" id="ticketnumber" name="ticketnumber" value="@ticket?.RequestNumber" />
+<input type="hidden" id="ClientGSTIN" name="ClientGSTIN" value="@ticket?.ClientGstin" />
+
+<div class="form-group mt-3">
+    <button id="startAuthBtn" class="btn btn-primary">Compare</button>
+</div>
+
+<div id="responseMessage" class="mt-3 text-info"></div>
+
+<!-- ✅ OTP Modal -->
+<div class="modal fade" id="otpModal" tabindex="-1" role="dialog" aria-labelledby="otpModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Enter OTP for Sales Register Reconciliation</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="cancelOtp()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="otpInput" class="form-control" placeholder="Enter OTP here" autofocus />
+                <small id="otpError" class="text-danger mt-2 d-block"></small>
+
+                <!-- Retry limit message and OK button (initially hidden) -->
+                <div id="retryLimitBox" class="mt-3 d-none text-center">
+                    <p class="text-danger">❌ Max retry attempts reached.</p>
+                    <button class="btn btn-danger" onclick="closeRetryBox()">OK</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal" onclick="cancelOtp()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitOtp()" id="otpSubmitBtn">Submit OTP</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Waiting Modal for 5th API -->
+<div class="modal fade" id="fifthApiWaitModal" tabindex="-1" role="dialog" aria-labelledby="fifthApiWaitModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content text-center">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Please wait EInvoices count is more than 5000</h5>
+            </div>
+            <div class="modal-body">
+                <p>File generation is in progress, Please wait for <span id="fifthApiCountdown">@initialTimeText</span> to proceed with the comparison</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Message -->
+@if (ViewBag.ErrorMessage != null)
+{
+    <div class="alert alert-danger mt-3 error-message-scroll">
+        ❌ @ViewBag.ErrorMessage
+    </div>
+}
+
+<div class="button-container">
+    <button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("SalesLedgerCurrentRequestsAPI_Master", "MainAdmin", new { fromDate = fromDate, toDate = toDate })'">Back to Current Requests</button>
+</div>
+
+@section Scripts {
+    <script>
+        const isAlpha = @isAlpha.ToString().ToLower();
+        const isNum = @isNum.ToString().ToLower();
+        const maxLength = @maxLength;
+
+        let txn = "";
+        const $response = $("#responseMessage");
+        let retryCount = 0;
+
+        document.getElementById("startAuthBtn").addEventListener("click", function () {
+            // ✅ Show loading overlay before starting any API call
+            document.getElementById("loadingOverlay").style.display = "block";
+
+            const gstin = $("#ClientGSTIN").val();
+            const ticketNo = $("#ticketnumber").val();
+
+            const compareUrl = '@Url.Action("CompareSalesLedgerAPI_Master", "MainAdmin")';
+            // $("#otpModal").modal("show");
+
+            $.post(compareUrl, { ticketnumber: ticketNo, ClientGSTIN: gstin }, function (res) {
+                if (res.success) {
+                    $response.addClass("text-success").text(res.message);
+                    callFourthApi(gstin, ticketNo);
+                } else if (res.askForOtp) {
+                    $("#loadingOverlay").hide();
+                    txn = res.txn;
+                    $('#otpModal').modal({
+                        backdrop: 'static',
+                        keyboard: false
+                    }).modal('show');
+                } else if(res.failure) {
+                    $response.addClass("text-danger").text("❌ " + res.message);
+                    $("#loadingOverlay").hide();
+                }
+                else {
+                    $("#loadingOverlay").hide();
+                    $response.addClass("text-danger").text("❌ " + res.message);
+                }
+            });
+        });
+
+        $("#otpInput").on("focus", function () {
+            $("#otpError").text('');
+        });
+
+        // Only clean the input silently
+        $("#otpInput").on("input", function () {
+            let val = $(this).val();
+            // Enforce maxLength
+            if (val.length > maxLength) {
+                val = val.substring(0, maxLength);
+            }
+
+            $(this).val(val);
+            // Don't show error while typing
+            $("#otpError").text('');
+        });
+
+        // autofocus on otp input field
+        $(document).ready(function () {
+            $('#otpModal').on('shown.bs.modal', function () {
+                $('#otpInput').trigger('focus');
+            });
+        });
+
+        // submit otp on pressing on enter button in keyboard
+        $("#otpInput").on("keydown", function (e) {
+            if (e.key === "Enter") {
+                e.preventDefault(); // Prevent form submission or default behavior
+                submitOtp();
+            }
+        });
+
+        // Verifying OTP and submit
+        function submitOtp() {
+            const otp = $("#otpInput").val().trim();
+            const gstin = $("#ClientGSTIN").val();
+            const ticketNo = $("#ticketnumber").val();
+
+           // console.log("otp button clicked");
+           // console.log("otp ",otp);
+
+            $("#otpError").text('');
+
+            if (!otp) {
+                $("#otpError").text("OTP is required.");
+                //console.log("Error message printed");
+                return;
+            }
+
+            if (isAlpha === true && isNum === false && !/^[a-zA-Z]+$/.test(otp)) {
+                $("#otpError").text("Only alphabetic characters are allowed.");
+                return;
+            }
+
+            if (isAlpha === false && isNum === true && !/^[0-9]+$/.test(otp)) {
+                $("#otpError").text("Only numeric characters are allowed.");
+               // console.log("Error message printed");
+                return;
+            }
+
+            if (isAlpha === true && isNum === true && !/^[a-zA-Z0-9]+$/.test(otp)) {
+                $("#otpError").text("Only alphanumeric characters are allowed.");
+                return;
+            }
+
+            if (otp.length > maxLength) {
+                $("#otpError").text(`OTP cannot exceed ${maxLength} characters.`);
+                return;
+            }
+
+            if (otp.length < maxLength) {
+                $("#otpError").text(`OTP must be exactly ${maxLength} characters long.`);
+                return;
+            }
+
+           // console.log("All passed");
+            $.post('@Url.Action("SLSubmitOtpAndContinue_Master", "MainAdmin")', {
+                ClientGSTIN: gstin,
+                ticketNo: ticketNo,
+                otp: otp,
+                txn: txn
+            }, function (res) {
+                if (res.success) {
+                    $("#otpModal").modal("hide");
+                    $("#responseMessage").text("✅ Auth Token Verified. Continue...");
+                    retryCount = 0;
+                    $("#loadingOverlay").show();
+                    callFourthApi(gstin, ticketNo);
+                } else if (res.askAgain) {
+                    $("#otpError").text(res.message);
+                    retryCount++;
+                    if (retryCount >= 3) {
+                        $("#otpInput").hide();
+                        $("#otpSubmitBtn").hide();
+                        $("#retryLimitBox").removeClass("d-none");
+                    }
+                } else if(res.failure) {
+                    $("#otpModal").modal("hide");
+                    $response.addClass("text-danger").text("❌ " + res.message);
+                }
+                else {
+                    $("#loadingOverlay").hide();
+                    $response.addClass("text-danger").text("❌ " + res.message);
+                }
+            });
+        }
+
+        function cancelOtp() {
+            $("#otpInput").val('').show();
+            $("#otpError").text('');
+            $("#retryLimitBox").addClass("d-none");
+            $("#otpSubmitBtn").show();
+            retryCount = 0;
+
+            const url = "@Html.Raw(Url.Action("CompareSalesLedgerGSTAPI_Master", "MainAdmin", new { ticketnumber = ticket?.RequestNumber, ClientGSTIN = ticket?.ClientGstin }))";
+            window.location.href = url;
+        }
+
+        function closeRetryBox() {
+            $("#otpModal").modal("hide");
+            cancelOtp();
+        }
+
+        function callFourthApi(gstin, ticketNo) {
+
+            $.post('@Url.Action("SLContinueWith4thApi_Master", "MainAdmin")', {
+                ClientGSTIN: gstin,
+                ticketnumber: ticketNo
+            }, function (res) {
+                if (res.success) {
+                    let token = res.token;
+                    //console.log("Fourth API Success:", res);
+                    //console.log("Token :", token);
+                    $("#loadingOverlay").show();
+                    callFifthApi(gstin, ticketNo, token);
+                }
+                else if (res.goToCompare) {
+                    $("#responseMessage").text("✅ Final API Success.");
+                    $("#loadingOverlay").show();
+                    CompareDataTables(ticketNo, gstin);
+                }
+                else if(res.failure) {
+                    $("#loadingOverlay").hide();
+                    $response.addClass("text-danger").text("❌ " + res.message);
+                }
+                else {
+                    $("#loadingOverlay").hide();
+                    $response.addClass("text-danger").text("❌ " + res.message);
+                }
+            });
+        }
+
+        // 5th api started
+        const fifthApiRetrySeconds = @retrySeconds;
+        // let fifthApiRetrySeconds = 300; // 5 minutes
+        let fifthApiInterval = null;
+        console.log("fifthApiRetrySeconds", fifthApiRetrySeconds);
+
+        function callFifthApi(gstin, ticketNo, token) {
+            const fifthApiUrl = '@Url.Action("SLContinueWithFinalApi_Master", "MainAdmin")'; // Replace with your actual action name
+
+            $.post(fifthApiUrl, { ticketnumber: ticketNo, clientGSTIN: gstin, token5: token }, function (res) {
+                //console.log("Fifth API Success:", res);
+
+                if (res.message && res.message.includes("File generation")) {
+                    // Server says to wait – start countdown modal
+                    $("#loadingOverlay").hide();
+                    startFifthApiRetryCountdown(gstin, ticketNo, res.token);
+                } else if (res.success) {
+                    $("#responseMessage").text("✅ Final API Success.");
+                    $("#loadingOverlay").show();
+                    CompareDataTables(ticketNo, gstin)
+                    // Handle success
+                } else if (res.failure) {
+                    $("#loadingOverlay").hide();
+                    $response.addClass("text-danger").text("❌ " + res.message);
+                }
+                else {
+                    $("#loadingOverlay").hide();
+                    $response.addClass("text-danger").text("❌ " + res.message);
+                }
+            });
+        }
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function startFifthApiRetryCountdown(gstin, ticketNo, token) {
+            let remaining = fifthApiRetrySeconds;
+
+            $("#fifthApiCountdown").text(formatTime(remaining));
+            $("#fifthApiWaitModal").modal({
+                backdrop: 'static',
+                keyboard: false
+            }).modal("show");
+
+            fifthApiInterval = setInterval(() => {
+                remaining--;
+                $("#fifthApiCountdown").text(formatTime(remaining));
+
+                if (remaining <= 0) {
+                    clearInterval(fifthApiInterval);
+                    $("#fifthApiWaitModal").modal("hide");
+                    $("#loadingOverlay").show();
+                    callFifthApi(gstin, ticketNo, token);
+                }
+            }, 1000);
+        }
+
+        function CompareDataTables(ticketNo , gstin) {
+
+            const compareUrl = '@Url.Action("CompareSLDataTables_Master", "MainAdmin")';
+            const url = `${compareUrl}?ticketnumber=${encodeURIComponent(ticketNo)}&clientGSTIN=${encodeURIComponent(gstin)}`;
+            window.location.href = url;
+            //$("#loadingOverlay").hide();
+        }
+
+    </script>
+}

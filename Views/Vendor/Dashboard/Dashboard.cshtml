@@ -1,0 +1,551 @@
+﻿@{
+	ViewData["Title"] = "Dashboard";
+	var data = ViewBag.BARData as Dictionary<string, decimal>;
+}
+
+<link rel="stylesheet" href="~/css/DashboardV.css" />
+
+<div class="dashboard-compact">
+	<div class="charts-container">
+		<!-- Pie Chart -->
+		<div class="chart-wrapper pie-chart-wrapper">
+			<div class="chart-header">
+				<div class="chart-title-section">
+					<h5>Task Distribution</h5>
+				</div>
+				<div class="dropdowns">
+					<div class="dropdown-group">
+						<select id="yearDropdown" class="modern-select"></select>
+						<select id="monthDropdown" class="modern-select"></select>
+					</div>
+					<button id="showPieChartBtn" class="btn-show-pie">
+						<span class="btn-icon">📊</span>
+						Show Chart
+					</button>
+				</div>
+			</div>
+			<div class="chart-body">
+				<div class="chart-container">
+					<canvas id="taskPieChart" width="350" height="380"></canvas>
+					<div id="pieNoDataMessage" class="no-data-message">
+						<div class="no-data-icon">📊</div>
+						<div class="no-data-text">No Pie Data Available</div>
+						<div class="no-data-subtext">Select a different period to view data</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Bar Chart -->
+		<div class="chart-wrapper bar-chart-wrapper">
+			<div class="chart-header">
+				<div class="chart-title-section">
+					<h5>Monthly Analysis</h5>
+				</div>
+				<div class="dropdowns bar-dropdowns">
+					<div class="dropdown-section">
+						<label class="dropdown-label">Return Type</label>
+						<select id="returnType" class="modern-select wide-select-content"></select>
+					</div>
+					<div class="period-wrapper">
+						<label class="dropdown-label"><strong>From Period</strong></label>
+						<div class="dropdown-row">
+							<select id="fromYear" class="modern-select wide-select"></select>
+							<select id="fromMonth" class="modern-select wide-select"></select>
+						</div>
+					</div>
+					<div class="period-wrapper">
+						<label class="dropdown-label"><strong>To Period</strong></label>
+						<div class="dropdown-row">
+							<select id="toYear" class="modern-select wide-select"></select>
+							<select id="toMonth" class="modern-select wide-select"></select>
+						</div>
+					</div>
+					<div class="dropdown-section">
+						<label class="dropdown-label">Chart Type</label>
+						<select id="barChartType" class="modern-select wide-select-Type"></select>
+					</div>
+					<button id="showBarGraphBtn" class="btn-show">
+						<span class="btn-icon">📈</span>
+						Generate Report
+					</button>
+				</div>
+			</div>
+			<div class="chart-body">
+				<div class="chart-container">
+					<div id="barErrorMessage" class="error-message-bar" style="@(ViewBag.BarErrorMessage != null ? "display:block;" : "display:none;")">
+						<div class="error-icon">⚠️</div>
+						<div class="error-text">@ViewBag.BarErrorMessage</div>
+					</div>
+					<canvas id="taskBarChart" width="580" height="350" style="@(ViewBag.BarErrorMessage == null ? "display:block;" : "display:none;")"></canvas>
+					<div id="barNoDataMessage" class="centered-message" style="display: none;">
+						<div class="no-data-icon">📈</div>
+						<div class="no-data-text">No bar chart data available</div>
+						<div class="no-data-subtext">Try adjusting your filter criteria</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Statistics Panel -->
+		<div class="stats-wrapper">
+			<div class="stats-header">
+				<h5>Key Statistics</h5>
+			</div>
+			<div class="stats-grid">
+				<div class="stat-card total-notices" onclick="window.location.href='@Url.Action("ActiveNotices", "Vendor")'">
+					<div class="stat-icon">📋</div>
+					<div class="stat-content">
+						<div class="stat-number">@(ViewBag.TotalNotices ?? 0)</div>
+						<div class="stat-label">Total Notices</div>
+					</div>
+					<div class="stat-trend">
+						<span class="trend-indicator positive">↗</span>
+					</div>
+				</div>
+
+				<div class="stat-card action-taken" onclick="window.location.href='@Url.Action("ActionTaken", "Vendor")'">
+					<div class="stat-icon">✅</div>
+					<div class="stat-content">
+						<div class="stat-number">@(ViewBag.ActionTaken ?? 0)</div>
+						<div class="stat-label">Action Taken</div>
+					</div>
+					<div class="stat-trend">
+						<span class="trend-indicator positive">↗</span>
+					</div>
+				</div>
+
+				<div class="stat-card action-pending" onclick="window.location.href='@Url.Action("UnreadNotices", "Vendor")'">
+					<div class="stat-icon">⏳</div>
+					<div class="stat-content">
+						<div class="stat-number">@(ViewBag.ActionToBeTaken ?? 0)</div>
+						<div class="stat-label">Action To Be Taken</div>
+					</div>
+					<div class="stat-trend">
+						<span class="trend-indicator warning">→</span>
+					</div>
+				</div>
+
+				<div class="stat-card closed-notices" onclick="window.location.href='@Url.Action("ClosedNotices", "Vendor")'">
+					<div class="stat-icon">🔒</div>
+					<div class="stat-content">
+						<div class="stat-number">@(ViewBag.ClosedNotices ?? 0)</div>
+						<div class="stat-label">Closed Notices</div>
+					</div>
+					<div class="stat-trend">
+						<span class="trend-indicator positive">↗</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Progress Overview 
+			<div class="progress-overview">
+				<h6>Completion Progress</h6>
+				<div class="progress-bar-container">
+					<div class="progress-bar">
+						<div class="progress-fill" style="width: @(ViewBag.TotalNotices > 0 ? (ViewBag.ClosedNotices * 100 / ViewBag.TotalNotices) : 0)%"></div>
+					</div>
+					<span class="progress-text">@(ViewBag.TotalNotices > 0 ? Math.Round((double)(ViewBag.ClosedNotices ?? 0) * 100 / (ViewBag.TotalNotices ?? 1), 1) : 0)% Complete</span>
+				</div>
+			</div> -->
+		</div>
+	</div>
+</div>
+
+@section Scripts {
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script>
+		// Function to populate year dropdown
+		function populateYearDropdown(yearId, selectedYear) {
+			const yearDropdown = document.getElementById(yearId);
+			if (!yearDropdown) {
+				console.error(`Dropdown ${yearId} not found`);
+				return;
+			}
+			const currentYear = new Date().getFullYear();
+			yearDropdown.innerHTML = '';
+			for (let year = currentYear; year >= 2020; year--) {
+				const option = new Option(year, year);
+				if (year == selectedYear) option.selected = true;
+				yearDropdown.add(option);
+			}
+		}
+
+		// Function to populate month dropdown
+		function populateMonthDropdown(monthId, selectedMonth) {
+			const monthDropdown = document.getElementById(monthId);
+			if (!monthDropdown) {
+				console.error(`Dropdown ${monthId} not found`);
+				return;
+			}
+			const months = [
+				{ name: 'Jan', value: '01' }, { name: 'Feb', value: '02' },
+				{ name: 'Mar', value: '03' }, { name: 'Apr', value: '04' },
+				{ name: 'May', value: '05' }, { name: 'Jun', value: '06' },
+				{ name: 'Jul', value: '07' }, { name: 'Aug', value: '08' },
+				{ name: 'Sep', value: '09' }, { name: 'Oct', value: '10' },
+				{ name: 'Nov', value: '11' }, { name: 'Dec', value: '12' }
+			];
+			monthDropdown.innerHTML = '';
+			months.forEach(m => {
+				const option = new Option(m.name, m.value);
+				if (m.value === selectedMonth || m.name === selectedMonth) option.selected = true;
+				monthDropdown.add(option);
+			});
+		}
+
+		// Function to populate returnType dropdown
+		function populateReturnTypeDropdown(returnTypeId, selectedReturnType) {
+			const returnTypeDropdown = document.getElementById(returnTypeId);
+			if (!returnTypeDropdown) {
+				console.error(`Dropdown ${returnTypeId} not found`);
+				return;
+			}
+			const returnTypes = [
+				{ name: 'GSTR2A', value: 'GSTR2A' },
+				{ name: 'GSTR1A', value: 'GSTR1A' },
+				{ name: 'GSTR2B', value: 'GSTR2B' }
+			];
+			returnTypeDropdown.innerHTML = '';
+			returnTypes.forEach(rt => {
+				const option = new Option(rt.name, rt.value);
+				if (rt.value === selectedReturnType) option.selected = true;
+				returnTypeDropdown.add(option);
+			});
+		}
+
+		// Function to populate chartType dropdown
+		function populateChartTypeDropdown(chartTypeId, selectedChartType) {
+			const chartTypeDropdown = document.getElementById(chartTypeId);
+			if (!chartTypeDropdown) {
+				console.error(`Dropdown ${chartTypeId} not found`);
+				return;
+			}
+			const chartTypes = [
+				{ name: 'Paid', value: 'paid' },
+				{ name: 'Purchase', value: 'purchase' },
+				{ name: 'Sales', value: 'sales' }
+			];
+			chartTypeDropdown.innerHTML = '';
+			chartTypes.forEach(ct => {
+				const option = new Option(ct.name, ct.value);
+				if (ct.value === selectedChartType) option.selected = true;
+				chartTypeDropdown.add(option);
+			});
+		}
+
+		// Setup Period Dropdowns for Bar Chart
+		function setupPeriodDropdowns() {
+			const now = new Date();
+			let toYear = now.getFullYear();
+			let toMonth = now.getMonth();
+			if (toMonth === 0) {
+				toMonth = 11;
+				toYear -= 1;
+			} else {
+				toMonth -= 1;
+			}
+			let toDate = new Date(toYear, toMonth, 1);
+			let fromDate = new Date(toDate);
+			fromDate.setMonth(toDate.getMonth() - 11);
+			const fromYear = fromDate.getFullYear();
+			const fromMonth = ('0' + (fromDate.getMonth() + 1)).slice(-2);
+			const toMonthFormatted = ('0' + (toMonth + 1)).slice(-2);
+			const selectedFromYear = '@ViewBag.FromYear' || fromYear;
+			const selectedFromMonth = '@ViewBag.FromMonth' || fromMonth;
+			const selectedToYear = '@ViewBag.ToYear' || toYear;
+			const selectedToMonth = '@ViewBag.ToMonth' || toMonthFormatted;
+			populateMonthDropdown('fromMonth', selectedFromMonth);
+			populateYearDropdown('fromYear', selectedFromYear);
+			populateMonthDropdown('toMonth', selectedToMonth);
+			populateYearDropdown('toYear', selectedToYear);
+		}
+
+		// Initialize Bar Chart
+		function initializeBarChart(barData) {
+			const barChartCanvas = document.getElementById('taskBarChart');
+			const barNoDataMessage = document.getElementById('barNoDataMessage');
+			const barErrorMessage = document.getElementById('barErrorMessage');
+
+			// Destroy existing chart if it exists
+			if (window.barChart instanceof Chart) {
+				window.barChart.destroy();
+			}
+
+			// Reset visibility
+			barChartCanvas.style.display = 'none';
+			barNoDataMessage.style.display = 'none';
+			barErrorMessage.style.display = '@(ViewBag.BarErrorMessage != null ? "block" : "none")';
+
+			if ('@(ViewBag.BarErrorMessage)' !== '') {
+				return; // Exit if there's an error
+			}
+
+			const totalTax = Object.values(barData || {}).reduce((sum, val) => sum + val, 0);
+
+			if (!barData || totalTax === 0) {
+				barChartCanvas.style.display = 'none';
+				barNoDataMessage.style.display = 'block';
+				return;
+			}
+
+			const monthlyInvoiceDetails = Object.keys(barData)
+				.map(key => ({
+					month: key,
+					tax: barData[key]
+				}))
+				.sort((a, b) => {
+					const [aMonth, aYear] = a.month.split('-');
+					const [bMonth, bYear] = b.month.split('-');
+					const aDate = new Date(`${aMonth} 1, 20${aYear}`);
+					const bDate = new Date(`${bMonth} 1, 20${bYear}`);
+					return aDate - bDate;
+				});
+
+			barChartCanvas.style.display = 'block';
+			barNoDataMessage.style.display = 'none';
+			barErrorMessage.style.display = 'none';
+
+			window.barChart = new Chart(barChartCanvas.getContext('2d'), {
+				type: 'bar',
+				data: {
+					labels: monthlyInvoiceDetails.map(item => item.month),
+					datasets: [{
+						label: 'Tax',
+						data: monthlyInvoiceDetails.map(item => item.tax),
+						backgroundColor: 'rgba(99, 102, 241, 0.8)',
+						borderColor: 'rgb(99, 102, 241)',
+						borderWidth: 2,
+						borderRadius: 8,
+						borderSkipped: false,
+						barThickness: 24
+					}]
+				},
+				options: {
+					responsive: false,
+					maintainAspectRatio: false,
+					plugins: {
+						legend: { display: false },
+						tooltip: {
+							backgroundColor: 'rgba(17, 24, 39, 0.95)',
+							titleColor: '#fff',
+							bodyColor: '#fff',
+							borderColor: 'rgba(99, 102, 241, 0.5)',
+							borderWidth: 1,
+							cornerRadius: 8,
+							callbacks: {
+								label: function (context) {
+									const index = context.dataIndex;
+									const item = monthlyInvoiceDetails[index];
+									return `Total Tax: ₹${item.tax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+								}
+							},
+							bodyFont: { size: 14 }
+						}
+					},
+					scales: {
+						y: {
+							beginAtZero: true,
+							grid: {
+								color: 'rgba(156, 163, 175, 0.2)',
+								drawBorder: false
+							},
+							ticks: {
+								callback: function (value) {
+									return '₹' + value.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+								},
+								font: { size: 12 },
+								color: '#6b7280'
+							}
+						},
+						x: {
+							grid: {
+								display: false
+							},
+							ticks: {
+								font: { size: 12 },
+								color: '#6b7280'
+							}
+						}
+					}
+				}
+			});
+		}
+
+		// Initialize Pie Chart
+		function initializePieChart() {
+			const invoiceDetails = [
+				{ invoices: @Html.Raw(Json.Serialize(ViewBag.MRC)), tax: @Html.Raw(Json.Serialize(ViewBag.MRS)) },
+				{ invoices: @Html.Raw(Json.Serialize(ViewBag.PRC)), tax: @Html.Raw(Json.Serialize(ViewBag.PRS)) },
+				{ invoices: @Html.Raw(Json.Serialize(ViewBag.UMC)), tax: @Html.Raw(Json.Serialize(ViewBag.UMS)) }
+			];
+			const pieChartCanvas = document.getElementById('taskPieChart');
+			const pieNoDataMessage = document.getElementById('pieNoDataMessage');
+			const allInvoicesZero = invoiceDetails.every(item => item.invoices === 0 || item.invoices === null);
+
+			if (allInvoicesZero) {
+				pieChartCanvas.style.display = 'none';
+				pieNoDataMessage.style.display = 'block';
+			} else {
+				pieChartCanvas.style.display = 'block';
+				pieNoDataMessage.style.display = 'none';
+				new Chart(pieChartCanvas.getContext('2d'), {
+					type: 'pie',
+					data: {
+						labels: ['Completely Matched (@ViewBag.MRC)', 'Partially Matched (@ViewBag.PRC)', 'Unmatched (@ViewBag.UMC)'],
+						datasets: [{
+							data: invoiceDetails.map(item => item.invoices),
+							backgroundColor: [
+								'rgba(34, 197, 94, 0.8)',
+								'rgba(251, 146, 60, 0.8)',
+								'rgba(239, 68, 68, 0.8)'
+							],
+							borderColor: [
+								'rgb(34, 197, 94)',
+								'rgb(251, 146, 60)',
+								'rgb(239, 68, 68)'
+							],
+							borderWidth: 2,
+							hoverOffset: 8
+						}]
+					},
+					options: {
+						responsive: false,
+						maintainAspectRatio: false,
+						plugins: {
+							legend: {
+								position: 'right',
+								labels: {
+									boxWidth: 15,
+									padding: 15,
+									font: { size: 13 },
+									color: '#374151',
+									usePointStyle: true,
+									pointStyle: 'circle'
+								}
+							},
+							tooltip: {
+								backgroundColor: 'rgba(17, 24, 39, 0.95)',
+								titleColor: '#fff',
+								bodyColor: '#fff',
+								borderColor: 'rgba(99, 102, 241, 0.5)',
+								borderWidth: 1,
+								cornerRadius: 8,
+								bodyFont: { size: 14 },
+								callbacks: {
+									label: function (context) {
+										const index = context.dataIndex;
+										const label = context.label;
+										const detail = invoiceDetails[index];
+										return [
+											`Invoices: ${detail.invoices}`,
+											`Taxable Value: ₹${detail.tax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+										];
+									}
+								}
+							}
+						}
+					}
+				});
+			}
+		}
+
+		// Document Ready
+		document.addEventListener('DOMContentLoaded', function () {
+			// Initialize dropdowns
+			const selectedYear = '@ViewBag.SelectedYear' || new Date().getFullYear();
+			const selectedMonth = '@ViewBag.SelectedMonth' || (function () {
+				var now = new Date();
+				var previousMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+				return ('0' + (previousMonth + 1)).slice(-2);
+			})();
+			const selectedReturnType = '@ViewBag.ReturnType' || 'GSTR2A';
+			const selectedFromYear = '@ViewBag.FromYear' || new Date().getFullYear() - 1;
+			const selectedFromMonth = '@ViewBag.FromMonth' || '01';
+			const selectedToYear = '@ViewBag.ToYear' || new Date().getFullYear();
+			const selectedToMonth = '@ViewBag.ToMonth' || (function () {
+				var now = new Date();
+				var previousMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+				return ('0' + (previousMonth + 1)).slice(-2);
+			})();
+			const selectedChartType = '@ViewBag.ChartType' || 'purchase';
+
+			populateYearDropdown('yearDropdown', selectedYear);
+			populateMonthDropdown('monthDropdown', selectedMonth);
+			populateReturnTypeDropdown('returnType', selectedReturnType);
+			populateYearDropdown('fromYear', selectedFromYear);
+			populateMonthDropdown('fromMonth', selectedFromMonth);
+			populateYearDropdown('toYear', selectedToYear);
+			populateMonthDropdown('toMonth', selectedToMonth);
+			populateChartTypeDropdown('barChartType', selectedChartType);
+			setupPeriodDropdowns();
+
+			// Initialize charts
+			initializePieChart();
+			const barData = @Html.Raw(Json.Serialize(ViewBag.BARData));
+			initializeBarChart(barData);
+
+			// Pie Chart Show Button
+			document.getElementById('showPieChartBtn').addEventListener('click', function () {
+				const year = document.getElementById('yearDropdown').value;
+				const monthValue = document.getElementById('monthDropdown').value;
+				const monthMap = {
+					"01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
+					"05": "May", "06": "Jun", "07": "Jul", "08": "Aug",
+					"09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec"
+				};
+				const monthShort = monthMap[monthValue];
+				const yearShort = year.slice(-2);
+				const period = `${monthShort}-${yearShort}`;
+				const returnType = document.getElementById('returnType').value;
+				const fromYear = document.getElementById('fromYear').value;
+				const fromMonth = document.getElementById('fromMonth').value;
+				const toYear = document.getElementById('toYear').value;
+				const toMonth = document.getElementById('toMonth').value;
+				const chartType = document.getElementById('barChartType').value;
+				const fromMonthShort = monthMap[fromMonth];
+				const fromYearShort = fromYear.slice(-2);
+				const fromPeriod = `${fromMonthShort}-${fromYearShort}`;
+				const toMonthShort = monthMap[toMonth];
+				const toYearShort = toYear.slice(-2);
+				const toPeriod = `${toMonthShort}-${toYearShort}`;
+				const query = new URLSearchParams({
+					period, fromPeriod, toPeriod, monthShort, year,
+					returnType, fromYear, fromMonth, toYear, toMonth, chartType
+				}).toString();
+				window.location.href = '@Url.Action("DashboardCharts", "Vendor")' + '?' + query;
+			});
+
+			// Bar Graph Show Button
+			document.getElementById('showBarGraphBtn').addEventListener('click', function () {
+				const returnType = document.getElementById('returnType').value;
+				const fromYear = document.getElementById('fromYear').value;
+				const fromMonth = document.getElementById('fromMonth').value;
+				const toYear = document.getElementById('toYear').value;
+				const toMonth = document.getElementById('toMonth').value;
+				const chartType = document.getElementById('barChartType').value;
+				const year = document.getElementById('yearDropdown').value;
+				const monthValue = document.getElementById('monthDropdown').value;
+				const monthMap = {
+					"01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
+					"05": "May", "06": "Jun", "07": "Jul", "08": "Aug",
+					"09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec"
+				};
+				const monthShort = monthMap[monthValue] || 'Jan';
+				const yearShort = year.slice(-2);
+				const period = `${monthShort}-${yearShort}`;
+				const fromMonthShort = monthMap[fromMonth] || 'Jan';
+				const fromYearShort = fromYear.slice(-2);
+				const fromPeriod = `${fromMonthShort}-${fromYearShort}`;
+				const toMonthShort = monthMap[toMonth] || 'Jan';
+				const toYearShort = toYear.slice(-2);
+				const toPeriod = `${toMonthShort}-${toYearShort}`;
+				const query = new URLSearchParams({
+					returnType, fromYear, fromMonth, toYear, toMonth, chartType,
+					fromPeriod, toPeriod, period, monthShort, year
+				}).toString();
+				window.location.href = '@Url.Action("DashboardCharts", "Vendor")' + '?' + query;
+			});
+		});
+	</script>
+}

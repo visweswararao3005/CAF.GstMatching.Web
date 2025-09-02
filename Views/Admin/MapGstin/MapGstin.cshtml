@@ -1,0 +1,222 @@
+﻿@{
+    ViewData["Title"] = "Map GSTIN";
+    var isServer = ViewBag.isServer;
+    var serverURl = ViewBag.serverURl;
+    var unmappedClients = ViewBag.unmappedClients as List<CAF.GstMatching.Models.UserModel.AdminClientModel> ?? new List<CAF.GstMatching.Models.UserModel.AdminClientModel>();
+    var mappedClients = ViewBag.mappedClients as List<CAF.GstMatching.Models.UserModel.AdminClientModel> ?? new List<CAF.GstMatching.Models.UserModel.AdminClientModel>();
+}
+<link rel="stylesheet" href="~/css/MapGstin.css" />
+
+<div class="container" style="display: flex; justify-content: center; gap: 40px;">
+    
+    <!-- UnMapped GSTINs -->
+    <div>
+        <h3 class="text-primary">Unmapped GSTINs(<span id="unmappedCount"></span>)</h3>
+        <input type="text" id="unmappedSearch" placeholder="Search..." class="form-control mb-1"
+               oninput="clearOtherSide('unmapped'); filterListHighlight(this, 'unmappedList')" />        <ul id="unmappedList" class="gstin-list">
+            @if (unmappedClients != null)
+            {
+                foreach (var item in unmappedClients)
+                {
+                    <li class="gstin-item" data-name="@item.ClientName" data-gstin="@item.ClientGSTIN" onclick="toggleSelection(this)">
+                        <div class="gstin-text">@item.ClientName - @item.ClientGSTIN</div>
+                    </li>
+                }
+            }
+        </ul>
+    </div>
+
+    <!-- Buttons -->
+    <div style="display: flex; flex-direction: column; gap: 30px; align-items: center; justify-content: center" class="button-click">
+        <button onclick="sendToController('MoveAllToRight')">⇉</button>
+        <button onclick="sendToController('MoveSelectedToRight')">→</button>
+        <button onclick="sendToController('MoveSelectedToLeft')">←</button>
+        <button onclick="sendToController('MoveAllToLeft')">⇇</button>
+    </div>
+
+    <!-- Mapped GSTINs -->
+    <div>
+        <h3 class="text-primary">Mapped GSTINs(<span id="mappedCount"></span>)</h3>
+        <input type="text" id="mappedSearch" placeholder="Search..." class="form-control mb-1"
+               oninput="clearOtherSide('mapped'); filterListHighlight(this, 'mappedList')" />        <ul id="mappedList" class="gstin-list">
+            @if (mappedClients != null)
+            {
+                foreach (var item in mappedClients)
+                {
+                    <li class="gstin-item" data-name="@item.ClientName" data-gstin="@item.ClientGSTIN" onclick="toggleSelection(this)">
+                        <div class="gstin-text">@item.ClientName - @item.ClientGSTIN</div>
+                    </li>
+                }
+            }
+        </ul>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title" id="messageModalLabel">Notice</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modalMessageText"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<script>
+    function filterListHighlight(input, listId) {
+        const filter = input.value.toLowerCase();
+        const list = document.getElementById(listId);
+        const items = list.querySelectorAll(".gstin-item");
+
+        items.forEach(item => {
+            const name = item.getAttribute("data-name");
+            const gstin = item.getAttribute("data-gstin");
+            const text = `${name} - ${gstin}`;
+            const lowerText = text.toLowerCase();
+
+            if (lowerText.includes(filter)) {
+                const regex = new RegExp(`(${filter})`, 'gi');
+                const highlighted = text.replace(regex, `<mark>$1</mark>`);
+                item.innerHTML = `<div class="gstin-text" title="${text}">${highlighted}</div>`;
+                item.style.display = "";
+            } else {
+                item.style.display = "none";
+            }
+        });
+    }
+
+    function toggleSelection(element) {
+        const isUnmapped = element.parentElement.id === "unmappedList";
+        const isMapped = element.parentElement.id === "mappedList";
+
+        // Reset the opposite list
+        if (isUnmapped) clearOtherSide("unmapped");
+        if (isMapped) clearOtherSide("mapped");
+
+        // Continue selection toggle
+        element.classList.toggle("selected");
+    }
+
+    function extractSelectedFromList(listId) {
+        return Array.from(document.querySelectorAll(`#${listId} .gstin-item.selected`)).map(item => ({
+            ClientName: item.getAttribute("data-name"),
+            ClientGstin: item.getAttribute("data-gstin")
+        }));
+    }
+
+    function extractAllFromList(listId) {
+        return Array.from(document.querySelectorAll(`#${listId} .gstin-item`)).map(item => ({
+            ClientName: item.getAttribute("data-name"),
+            ClientGstin: item.getAttribute("data-gstin")
+        }));
+    }
+
+    function showModalMessage(message) {
+        document.getElementById("modalMessageText").innerText = message;
+        let modal = new bootstrap.Modal(document.getElementById("messageModal"));
+        modal.show();
+    }
+
+    function sortListByClientName(listId) {
+        const list = document.getElementById(listId);
+        const items = Array.from(list.querySelectorAll(".gstin-item"));
+
+        items.sort((a, b) => {
+            const nameA = a.getAttribute("data-name")?.toLowerCase() || '';
+            const nameB = b.getAttribute("data-name")?.toLowerCase() || '';
+            return nameA.localeCompare(nameB);
+        });
+
+        // Clear list and re-append sorted
+        list.innerHTML = '';
+        items.forEach(item => list.appendChild(item));
+    }
+
+    function updateListCounts() {
+        document.getElementById("unmappedCount").innerText =
+            document.querySelectorAll("#unmappedList .gstin-item").length;
+
+        document.getElementById("mappedCount").innerText =
+            document.querySelectorAll("#mappedList .gstin-item").length;
+    }
+
+    function clearOtherSide(activeSide) {
+        if (activeSide === "unmapped") {
+            document.querySelectorAll("#mappedList .gstin-item.selected").forEach(item => item.classList.remove("selected"));
+            document.getElementById("mappedSearch").value = "";
+            filterListHighlight(document.getElementById("mappedSearch"), "mappedList");  // ✅ fix here
+        } else if (activeSide === "mapped") {
+            document.querySelectorAll("#unmappedList .gstin-item.selected").forEach(item => item.classList.remove("selected"));
+            document.getElementById("unmappedSearch").value = "";
+            filterListHighlight(document.getElementById("unmappedSearch"), "unmappedList");  // ✅ fix here
+        }
+    }
+
+    function sendToController(actionType) {
+        const leftListId = "unmappedList";
+        const rightListId = "mappedList";
+        var baseUrl = '@Url.Content("~/")';
+        let items = [];
+        let flag, url;
+
+        url = baseUrl + "Admin/AddClientsOrRemoveClients";
+
+        if (actionType === "MoveAllToRight") {
+            items = extractAllFromList(leftListId);
+            console.log(items);
+            if (items.length === 0) return showModalMessage("No items in Unmapped GSTINs.");
+            flag = "Add";
+        } else if (actionType === "MoveSelectedToRight") {
+            items = extractSelectedFromList(leftListId);
+            if (items.length === 0) return showModalMessage("Select items in Unmapped GSTINs.");
+            flag = "Add";
+        } else if (actionType === "MoveSelectedToLeft") {
+            items = extractSelectedFromList(rightListId);
+            if (items.length === 0) return showModalMessage("Select items in Mapped GSTINs.");
+            flag = "Remove";
+        } else if (actionType === "MoveAllToLeft") {
+            items = extractAllFromList(rightListId);
+            if (items.length === 0) return showModalMessage("No items in Mapped GSTINs.");
+            flag = "Remove";
+        }
+
+        const payload = {
+            flag: flag,
+            clients: items
+        };
+
+        fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        })
+            .then(response => {
+                if (!response.ok) throw new Error("Network error");
+                return response.text();
+            })
+            .then(data => {
+                document.getElementById('unmappedSearch').value = '';
+                document.getElementById('mappedSearch').value = '';
+                location.reload();
+            })
+            .catch(error => console.error("Error:", error));
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        updateListCounts();
+        sortListByClientName("unmappedList");
+        sortListByClientName("mappedList");
+        document.getElementById("unmappedCount").innerText = document.querySelectorAll("#unmappedList .gstin-item").length;
+        document.getElementById("mappedCount").innerText = document.querySelectorAll("#mappedList .gstin-item").length;
+    });
+
+</script>
+

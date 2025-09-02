@@ -1,0 +1,388 @@
+﻿@{
+    ViewData["Title"] = "Upload GST Sales Ledger File";
+}
+
+@{
+    var responseDict = ViewBag.ResponseDict as Dictionary<string, string> ?? new Dictionary<string, string>();
+    var pendingTickets = ViewBag.PendingTickets as List<dynamic> ?? new List<dynamic>();
+    var pendingCount = ViewBag.PendingCount ?? 0;
+    var completedCount = ViewBag.CompletedCount ?? 0;
+    var RequestNo = ViewBag.RequestNo ?? null;
+    var FinancialYear = ViewBag.FY;
+    var PeriodType = ViewBag.PT;
+    var Period = ViewBag.P;
+}
+
+@{
+    <link rel="stylesheet" href="~/css/UploadGST.css" />
+}
+
+<!-- Loading Overlay -->
+<div id="salesLoadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 20px; text-align: center;">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+</div>
+
+<div class="container mt-1">
+    <h2 class="text-primary">Upload GST Sales Register Invoice File</h2>
+
+    <form asp-action="SalesLedgerUploadFile" asp-controller="Vendor" method="post" enctype="multipart/form-data" id="salesUploadForm">
+        <input type="hidden" id="salesHiddenFinancialYear" name="financialYear" />
+        <input type="hidden" id="salesHiddenPeriodType" name="periodtype" />
+        <input type="hidden" id="salesHiddenPeriod" name="period" />
+        <input type="hidden" id="salesRequestNo" name="RequestNo" value="@RequestNo" />
+
+        <!-- Financial Year and Period Type side by side -->
+        <div class="form-group row">
+            <div class="col-md-6">
+                <label for="salesFinancialYear">@(responseDict.ContainsKey("lblFinancialYear") ? responseDict["lblFinancialYear"] : "Financial Year")</label>
+                <select class="form-control dropdown-with-arrow" id="salesFinancialYear" name="financialYear" required onchange="salesUpdatePeriodOptions()">
+                    <option value="">@(responseDict.ContainsKey("lblSelectFinancialYear") ? responseDict["lblSelectFinancialYear"] : "Select Financial Year")</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="salesPeriodtype">@(responseDict.ContainsKey("lblPeriodType") ? responseDict["lblPeriodType"] : "Period Type")</label>
+                <select class="form-control dropdown-with-arrow" id="salesPeriodtype" name="periodtype" required onchange="salesUpdatePeriodOptions()">
+                    <option value="">@(responseDict.ContainsKey("lblSelectPeriodType") ? responseDict["lblSelectPeriodType"] : "Select Period Type")</option>
+                    <option value="Monthly">Monthly</option>
+                    <option value="Quarterly">Quarterly</option>
+                </select>
+            </div>
+        </div>
+        <!-- Period -->
+        <div class="form-group">
+            <label for="salesPeriod">@(responseDict.ContainsKey("lblPeriod") ? responseDict["lblPeriod"] : "Period")</label>
+            <select class="form-control dropdown-with-arrow" id="salesPeriod" name="period" required>
+                <option value="">@(responseDict.ContainsKey("lblSelectPeriod") ? responseDict["lblSelectPeriod"] : "Select Period")</option>
+            </select>
+        </div>
+
+        <!-- File Upload with custom UI -->
+        <div class="form-group">
+            <div class="label-container">
+                <label for="salesGstFile" class="d-inline-block">Select GST Sales Register Invoice File :</label>
+                <a href="@Url.Action("DownloadSRSampleFileCSV", "Vendor")">
+                    SRSampleInvoice.csv
+                </a>
+                <a href="@Url.Action("DownloadSRSampleFileXLS", "Vendor")">
+                    SRSampleInvoice.xls
+                </a>
+                <a href="@Url.Action("DownloadSRSampleFileXLSX", "Vendor")">
+                    SRSampleInvoice.xlsx
+                </a>
+            </div>
+            <div class="custom-file-upload">
+                <input type="text" id="salesFileNameDisplay" readonly placeholder Tachini="No file selected" />
+                <button type="button" onclick="document.getElementById('salesGstFile').click()">Browse</button>
+                <input type="file" name="gstFile" id="salesGstFile" accept=".csv, .xls, .xlsx" />
+            </div>
+            <div id="salesFileError" class="text-danger" style="display: none;">Please select a file.</div>
+        </div>
+
+        <!-- Upload Button -->
+        <div class="form-group mt-1">
+            <button type="submit" class="btn btn-primary">Upload</button>
+        </div>
+    </form>
+
+    <!-- Success Message -->
+    @if (ViewBag.Message != null && ViewBag.ErrorMessage == null && ViewBag.Edit == "No")
+    {
+        <div id="salesSuccessModal" class="modal">
+            <div class="modal-content" id="salesModalContent">
+                ✅ Request Generated: <strong>@ViewBag.Message</strong>
+                <br>Track your GST comparison using this request number.
+                <button class="modal-button" onclick="salesCloseModal()">OK</button>
+            </div>
+        </div>
+    }
+
+    @if (ViewBag.Edit == "Yes" && ViewBag.ErrorMessage == null)
+    {
+        <div id="salesSuccessModal" class="modal">
+            <div class="modal-content" id="salesModalContent">
+                ✅ Request Updated: <strong>@ViewBag.Message</strong>
+                <br>Track your GST comparison using this request number.
+                <button class="modal-button" onclick="salesCloseModal()">OK</button>
+            </div>
+        </div>
+    }
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger mt-1 error-message-scroll">
+            @Html.Raw(((string)ViewBag.ErrorMessage).Replace("\n", "<br/>"))
+        </div>
+    }
+
+    <!-- Back Button -->
+    <div class="back-button">
+        <button class="btn-back" onclick="salesClearFormValuesAndRedirect()">
+            @(responseDict.ContainsKey("btnBackToDashboard") ? responseDict["btnBackToDashboard"] : "Back to Dashboard")
+        </button>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Function to populate financial year options dynamically
+        function populateFinancialYears() {
+            const selectElement = document.getElementById('salesFinancialYear');
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear();
+            const currentMonth = currentDate.getMonth(); // 0-based (0 = Jan, 3 = Apr, etc.)
+
+            // Determine the current financial year
+            // If month is April (3) or later, current financial year starts this year
+            const currentFinancialYearStart = currentMonth >= 3 ? currentYear : currentYear - 1;
+
+            // Clear existing options except the placeholder
+            selectElement.innerHTML = '<option value="">@(responseDict.ContainsKey("lblSelectFinancialYear") ? responseDict["lblSelectFinancialYear"] : "Select Financial Year")</option>';
+
+            // Add financial years from 2024-2025 up to current financial year
+            for (let startYear = 2024; startYear <= currentFinancialYearStart; startYear++) {
+                const optionValue = `${startYear}-${startYear + 1}`;
+                const optionText = `Apr ${startYear} - Mar ${startYear + 1}`;
+                const option = document.createElement('option');
+                option.value = optionValue;
+                option.text = optionText;
+                selectElement.appendChild(option);
+            }
+
+            // If server-side FinancialYear exists, set it
+            const serverFinancialYear = '@FinancialYear';
+            if (serverFinancialYear) {
+                selectElement.value = serverFinancialYear;
+                salesUpdatePeriodOptions(); // Update period options if FY is set
+            }
+        }
+
+        // Function to save form values to sessionStorage
+        function salesSaveFormValues() {
+            const formData = {
+                financialYear: document.getElementById("salesFinancialYear").value,
+                periodType: document.getElementById("salesPeriodtype").value,
+                period: document.getElementById("salesPeriod").value,
+                gstFileName: document.getElementById("salesFileNameDisplay").value
+            };
+            sessionStorage.setItem("salesFormValues", JSON.stringify(formData));
+        }
+
+        // Function to update file name display
+        function salesUpdateFileNameDisplay(fileName) {
+            const fileNameDisplay = document.getElementById("salesFileNameDisplay");
+            fileNameDisplay.value = fileName || "No file selected";
+        }
+
+        // Function to load form values from sessionStorage
+        function salesLoadFormValues() {
+            const savedValues = sessionStorage.getItem("salesFormValues");
+            if (savedValues) {
+                const formData = JSON.parse(savedValues);
+                document.getElementById("salesFinancialYear").value = formData.financialYear || "";
+                document.getElementById("salesPeriodtype").value = formData.periodType || "";
+                if (formData.financialYear && formData.periodType) {
+                    salesUpdatePeriodOptions();
+                    document.getElementById("salesPeriod").value = formData.period || "";
+                }
+                salesUpdateFileNameDisplay(formData.gstFileName || "");
+            } else if (!savedValues && salesServerFinancialYear && salesServerPeriodType && salesServerFileName) {
+                document.getElementById("salesFinancialYear").value = salesServerFinancialYear;
+                document.getElementById("salesPeriodtype").value = salesServerPeriodType;
+                salesUpdatePeriodOptions();
+                document.getElementById("salesPeriod").value = salesServerPeriod;
+                salesUpdateFileNameDisplay(salesServerFileName);
+            }
+        }
+
+        // Update period options function
+        function salesUpdatePeriodOptions() {
+            var fy = document.getElementById("salesFinancialYear").value;
+            var periodType = document.getElementById("salesPeriodtype").value;
+            var periodDropdown = document.getElementById("salesPeriod");
+
+            periodDropdown.innerHTML = '<option value="">Select Period</option>';
+
+            if (!fy || !periodType) return;
+
+            let fySplit = fy.split("-");
+            let startYear = parseInt(fySplit[0]);
+            let endYear = startYear + 1;
+
+            if (periodType === "Monthly") {
+                const months = [
+                    "Apr", "May", "Jun", "Jul", "Aug", "Sep",
+                    "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"
+                ];
+
+                months.forEach((month, index) => {
+                    let year = (index < 9) ? startYear : endYear;
+                    let display = `${month}-${year.toString().slice(-2)}`;
+                    periodDropdown.innerHTML += `<option value="${display}">${display}</option>`;
+                });
+            } else if (periodType === "Quarterly") {
+                const quarters = [
+                    { name: "Q1", months: "Apr-Jun" },
+                    { name: "Q2", months: "Jul-Sep" },
+                    { name: "Q3", months: "Oct-Dec" },
+                    { name: "Q4", months: "Jan-Mar" }
+                ];
+
+                quarters.forEach((q, index) => {
+                    let year = (index < 3) ? startYear : endYear;
+                    let display = `${q.name}-${year.toString().slice(-2)}`;
+                    periodDropdown.innerHTML += `<option value="${display}">${q.months} (${display})</option>`;
+                });
+            }
+        }
+
+        // Form submission handler with validation
+        document.querySelector("#salesUploadForm").addEventListener("submit", function (event) {
+            var fileInput = document.getElementById("salesGstFile");
+            var fileError = document.getElementById("salesFileError");
+
+            // Check if a file is selected
+            if (fileInput.files.length === 0) {
+                event.preventDefault();
+                fileError.style.display = "block"; // Show error message
+                return;
+            } else {
+                fileError.style.display = "none"; // Hide error message if file is selected
+                document.getElementById('salesLoadingOverlay').style.display = 'block'; // Show loading overlay
+            }
+
+            salesSaveFormValues();
+
+            document.getElementById("salesHiddenFinancialYear").value = document.getElementById("salesFinancialYear").value;
+            document.getElementById("salesHiddenPeriodType").value = document.getElementById("salesPeriodtype").value;
+            document.getElementById("salesHiddenPeriod").value = document.getElementById("salesPeriod").value;
+        });
+
+        // Get values from server-side ViewBag
+        const salesServerFinancialYear = '@ViewBag.FinancialYear';
+        const salesServerPeriodType = '@ViewBag.PeriodType';
+        const salesServerPeriod = '@ViewBag.TxnPeriod';
+        const salesServerFileName = '@ViewBag.FileName';
+
+        // Load saved values and handle file input changes
+        document.addEventListener("DOMContentLoaded", function () {
+            // Populate financial years on page load
+            populateFinancialYears();
+
+            const hasError = @Json.Serialize(ViewBag.ErrorMessage != null);
+            const hasSuccess = document.querySelector("#salesModalContent");
+            if (hasError) {
+                salesLoadFormValues();
+            }
+            else if (hasSuccess) {
+                salesLoadFormValues();
+            }
+            else if (salesServerFinancialYear && salesServerPeriodType && salesServerPeriod && salesServerFileName) {
+                salesLoadFormValues();
+            }
+            else {
+                sessionStorage.removeItem("salesFormValues");
+                salesUpdateFileNameDisplay("");
+            }
+
+            document.getElementById("salesGstFile").addEventListener("change", function () {
+                const fileName = this.files[0]?.name || "";
+                salesUpdateFileNameDisplay(fileName);
+                salesSaveFormValues();
+            });
+
+            document.getElementById("salesFileNameDisplay").addEventListener("click", function () {
+                document.getElementById("salesGstFile").click();
+            });
+
+            var modal = document.getElementById('salesSuccessModal');
+            if (modal) {
+                console.log('Sales Modal displayed');
+                modal.style.display = 'flex';
+            }
+        });
+
+        // Save values whenever a field changes
+        document.getElementById("salesFinancialYear").addEventListener("change", salesSaveFormValues);
+        document.getElementById("salesPeriodtype").addEventListener("change", salesSaveFormValues);
+        document.getElementById("salesPeriod").addEventListener("change", salesSaveFormValues);
+
+        // Clear sessionStorage and redirect
+        function salesClearFormValuesAndRedirect() {
+            sessionStorage.removeItem("salesFormValues");
+            salesUpdateFileNameDisplay("");
+            window.location.href = '@Url.Action("DashboardView", "Vendor")';
+        }
+
+        // Close modal and clear form
+        function salesCloseModal() {
+            try {
+                var modal = document.getElementById('salesSuccessModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                    console.log('Sales Modal closed');
+                }
+                var form = document.getElementById('salesUploadForm');
+                if (form) {
+                    form.reset();
+                }
+                window.location.href = '@Url.Action("SalesLedgerCurrentRequests", "Vendor")';
+            } catch (error) {
+                console.error('Error in salesCloseModal:', error);
+            }
+        }
+
+        // Draggable modal functionality
+        (function () {
+            var modalContent = document.getElementById('salesModalContent');
+            if (modalContent) {
+                var isDragging = false;
+                var currentX;
+                var currentY;
+                var initialX;
+                var initialY;
+                var xOffset = 0;
+                var yOffset = 0;
+
+                modalContent.addEventListener('mousedown', salesStartDragging);
+
+                function salesStartDragging(e) {
+                    initialX = e.clientX - xOffset;
+                    initialY = e.clientY - yOffset;
+
+                    if (e.target === modalContent || e.target.tagName === 'P') {
+                        isDragging = true;
+                    }
+
+                    document.addEventListener('mousemove', salesDrag);
+                    document.addEventListener('mouseup', salesStopDragging);
+                }
+
+                function salesDrag(e) {
+                    if (isDragging) {
+                        e.preventDefault();
+                        currentX = e.clientX - initialX;
+                        currentY = e.clientY - initialY;
+
+                        xOffset = currentX;
+                        yOffset = currentY;
+
+                        salesSetTranslate(currentX, currentY, modalContent);
+                    }
+                }
+
+                function salesSetTranslate(xPos, yPos, el) {
+                    el.style.transform = `translate(${xPos}px, ${yPos}px)`;
+                }
+
+                function salesStopDragging() {
+                    isDragging = false;
+                    document.removeEventListener('mousemove', salesDrag);
+                    document.removeEventListener('mouseup', salesStopDragging);
+                }
+            }
+        })();
+    </script>
+}

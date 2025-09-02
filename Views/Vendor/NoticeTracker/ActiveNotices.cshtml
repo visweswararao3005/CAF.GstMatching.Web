@@ -1,0 +1,362 @@
+﻿@{
+    ViewData["Title"] = "Vendor Active Notices";
+    var responseDict = ViewBag.ResponseDict as Dictionary<string, string> ?? new Dictionary<string, string>();
+    var notices = ViewBag.Notices as List<CAF.GstMatching.Models.NoticeDataModel> ?? new List<CAF.GstMatching.Models.NoticeDataModel>();
+
+    // Sort notices by Created Date in descending order (latest first)
+    if (notices != null)
+    {
+        notices = notices.OrderByDescending(n => n.UpdatedDateTime).ToList();
+
+        //Console.WriteLine($"Vendor notices count: {notices.Count}");
+    }
+
+    // Calculate default dates
+    var today = DateTime.Today;
+    var yesterday = today.AddDays(-1);
+    var defaultFromDate = yesterday.ToString("yyyy-MM-dd");
+    var defaultToDate = today.ToString("yyyy-MM-dd");
+    var fromDate = ViewBag.FromDate != null ? ViewBag.FromDate.ToString("yyyy-MM-dd") : defaultFromDate;
+    var toDate = ViewBag.ToDate != null ? ViewBag.ToDate.ToString("yyyy-MM-dd") : defaultToDate;
+    var status = ViewBag.status ?? "All";
+    var priority = ViewBag.priority ?? "All";
+    var gstin = ViewBag.gstin;
+    var isServer = ViewBag.isServer;
+    var serverURl = ViewBag.serverURl;
+}
+
+<link rel="stylesheet" href="~/css/OpenTaskV.css" />
+
+<div class="dashboard-body">
+    <!-- Current Requests Header and Filter Section -->
+    <div class="header-filter-container">
+        @if (ViewBag.flag)
+        {
+            <h4>@(responseDict.ContainsKey("lblActiveNotices") ? responseDict["lblActiveNotices"] : "Unread Active Notices")</h4>
+        }
+        else
+        {
+            <h4>@(responseDict.ContainsKey("lblActiveNotices") ? responseDict["lblActiveNotices"] : "Active Notices")</h4>
+        }
+        <div class="date-filter">
+            @if (!ViewBag.flag)
+            {
+                <label for="fromDate">@(responseDict.ContainsKey("lblFromDate") ? responseDict["lblFromDate"] : "From Date"):</label>
+                <input type="date" id="fromDate" name="fromDate" value="@fromDate" max="@DateTime.Today.ToString("yyyy-MM-dd")">
+                <label for="toDate">@(responseDict.ContainsKey("lblToDate") ? responseDict["lblToDate"] : "To Date"):</label>
+                <input type="date" id="toDate" name="toDate" value="@toDate" max="@DateTime.Today.ToString("yyyy-MM-dd")">
+
+                <label for="filterStatus">@(responseDict.ContainsKey("lblStatus") ? responseDict["lblStatus"] : "Status"):</label>
+                <select id="filterStatus" class="form-select">
+                    <option value="All" selected="@(status == "All")">
+                        @(responseDict.ContainsKey("lblAll") ? responseDict["lblAll"] : "All")
+                    </option>
+                    <option value="Open" selected="@(status == "Open")">
+                        @(responseDict.ContainsKey("lblOpen") ? responseDict["lblOpen"] : "Open")
+                    </option>
+                    <option value="In Progress" selected="@(status == "In Progress")">
+                        @(responseDict.ContainsKey("lblInProgress") ? responseDict["lblInProgress"] : "In Progress")
+                    </option>
+                </select>
+                <label for="filterPriority">@(responseDict.ContainsKey("lblPriority") ? responseDict["lblPriority"] : "Priority"):</label>
+                <select id="filterPriority" class="form-select">
+                    <option value="All" selected="@(priority == "All")">
+                        @(responseDict.ContainsKey("lblAll") ? responseDict["lblAll"] : "All")
+                    </option>
+                    <option value="High" selected="@(priority == "High")">
+                        @(responseDict.ContainsKey("lblHigh") ? responseDict["lblHigh"] : "High")
+                    </option>
+                    <option value="Medium" selected="@(priority == "Medium")">
+                        @(responseDict.ContainsKey("lblMedium") ? responseDict["lblMedium"] : "Medium")
+                    </option>
+                    <option value="Low" selected="@(priority == "Low")">
+                        @(responseDict.ContainsKey("lblLow") ? responseDict["lblLow"] : "Low")
+                    </option>
+                </select>
+                <button class="btn-search" onclick="filterNotices()">@(responseDict.ContainsKey("btnSearch") ? responseDict["btnSearch"] : "Search")</button>
+            }
+            @if (ViewBag.UnreadCount != null && (int)ViewBag.UnreadCount > 0)
+            {
+                <button class="btn-search" style="background-color:#28a745; position:relative; margin-right:8px;" onclick="goToUnreadNotices()">
+                    Unread
+                    <span style="position:absolute; top:-8px; right:-12px; background:red; color:white; border-radius:50%; padding:2px 6px; font-size:12px;">
+                        @ViewBag.UnreadCount
+                    </span>
+                </button>
+            }
+
+        </div>
+        @if (ViewBag.flag)
+        {
+            <div class="button-container">
+                <button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("ActiveNotices", "Vendor", new{ fromDate = fromDate, toDate = toDate, status = status, priority = priority })'">
+                    @(responseDict.ContainsKey("btnBack") ? responseDict["btnBack"] : "Back")
+                </button>
+            </div>
+        }
+    </div>
+
+    <!-- Table container with internal scroll -->
+    <div class="pending-notices">
+
+        @if (notices != null && notices.Any())
+        {
+
+            <table class="ticket-table" id="noticesTable">
+                <thead>
+                    <tr>
+                        <th style="width: 5%">@(responseDict.ContainsKey("lblSLNo") ? responseDict["lblSLNo"] : "SL No")</th>
+                        <th style="width: 7%">@(responseDict.ContainsKey("lblRequestNumber") ? responseDict["lblRequestNumber"] : "Request Number")</th>
+                        <th style="width: 15%">@(responseDict.ContainsKey("lblNoticeTitle") ? responseDict["lblNoticeTitle"] : "Notice Title")</th>
+                        <th style="width: 10%">@(responseDict.ContainsKey("lblNoticeDate") ? responseDict["lblNoticeDate"] : "Notice Date")</th>
+                        <th style="width: 13%">@(responseDict.ContainsKey("lblCreatedDate") ? responseDict["lblCreatedDate"] : "Created Date and Time")</th>
+                        <th style="width: 13%">@(responseDict.ContainsKey("lblUpdatedDate") ? responseDict["lblUpdatedDate"] : "Updated Date and Time")</th>
+                        <th style="width: 9%">@(responseDict.ContainsKey("lblPriority") ? responseDict["lblPriority"] : "Priority")</th>
+                        <th style="width: 9%">@(responseDict.ContainsKey("lblStatus") ? responseDict["lblStatus"] : "Status")</th>
+                        <th style="width: 9%">@(responseDict.ContainsKey("lblUploadedNotice") ? responseDict["lblUploadedNotice"] : "Uploaded Notice")</th>
+                        <th style="width: 5%">@(responseDict.ContainsKey("lblEdit") ? responseDict["lblEdit"] : "Edit")</th>
+                        <th style="width: 5%; text-align: center;">@(responseDict.ContainsKey("lblActions") ? responseDict["lblActions"] : "Actions")</th>
+                    </tr>
+                </thead>
+                <tbody class="table-body">
+                    @{
+                        int slNo = 1;
+                    }
+                    @foreach (var notice in notices)
+                    {
+                        //Console.WriteLine($"Vendor notice req-{@notice.RequestNumber} have unread msg {notice.HasUnreadMessages} is admin {@notice.IsAdmin}");
+                        <tr data-status="@notice.status" data-priority="@notice.Priority" data-date="@notice.NoticeDatetime?.ToString("yyyy-MM-dd")">
+                            <td>@slNo</td>
+                            <td>@notice.RequestNumber</td>
+                            <td>@notice.NoticeTitle</td>
+                            <td>@notice.NoticeDatetime?.ToString("yyyy-MMM-dd")</td>
+                            <td>@notice.CreatedDatetime?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td>
+                            <td>@notice.UpdatedDateTime?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td>
+                            <td>
+                                <span class="badge @(notice.Priority == "High" ? "bg-danger" : notice.Priority == "Medium" ? "bg-warning text-dark" : "bg-success")">
+                                    @notice.Priority
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge @(notice.status == "Open" ? "bg-info text-dark" : notice.status == "In Progress" ? "bg-warning text-dark" : "bg-success")">
+                                    @notice.status
+                                </span>
+                            </td>
+                            <td style="text-align: center;">
+                                @if (!string.IsNullOrEmpty(notice.FileName))
+                                {
+                                    <a href="@Url.Action("PDF", "Admin" , new {req = notice.RequestNumber , gstin = notice.ClientGstin })" class="btn btn-sm btn-primary">
+                                        @(responseDict.ContainsKey("btnDownload") ? responseDict["btnDownload"] : "Download")
+                                    </a>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-secondary" disabled>
+                                        @(responseDict.ContainsKey("btnDownload") ? responseDict["btnDownload"] : "Download")
+                                    </button>
+                                }
+                            </td>
+                            <td>
+                                <a href="@Url.Action("EditUploadNotice", "Vendor", new { requestNo = notice.RequestNumber, ClientGSTIN = notice.ClientGstin })"
+                                   class="btn btn-sm btn-primary">
+                                    @(responseDict.ContainsKey("btnEdit") ? responseDict["btnEdit"] : "Edit")
+                                </a>
+                            </td>
+                            <td>
+                                @if (notice.status == "In Progress")
+                                {
+                                    <a href="javascript:void(0);"
+                                       class="chat-link btn btn-sm btn-primary"
+                                       id="chat-@notice.RequestNumber"
+                                       data-requestnumber="@notice.RequestNumber"
+                                       data-gstin="@notice.ClientGstin"
+                                       data-href="@Url.Action("ConversationChat", "Vendor", new { requestNo = notice.RequestNumber, ClientGSTIN = notice.ClientGstin, fromDate = fromDate, toDate = toDate, priority = priority, status = status })">
+
+                                        @(responseDict.ContainsKey("btnChat") ? responseDict["btnChat"] : "Chat")
+                                        <span class="chat-indicator text-danger font-weight-bold" style="display:@( (@notice.IsAdmin && @notice.HasUnreadMessages) ? "inline" : "none")">🔴</span>
+
+                                    </a>
+                                    <a href="javascript:void(0);"
+                                       class="btn btn-sm btn-success"
+                                       data-request-url="@Url.Action("CloseNotice", "Vendor", new { requestNo = notice.RequestNumber, ClientGSTIN = notice.ClientGstin })"
+                                       onclick="showConfirmPopup(this)">
+                                        @(responseDict.ContainsKey("btnClose") ? responseDict["btnClose"] : "Close")
+                                    </a>
+                                }
+                                else if (notice.status == "Open")
+                                {
+                                    <a href="#" 
+                                       class="chat-link btn btn-sm btn-primary disabled" aria-disabled="true"
+                                       id="chat-@notice.RequestNumber"
+                                       data-requestnumber="@notice.RequestNumber">
+                                        @(responseDict.ContainsKey("btnChat") ? responseDict["btnChat"] : "Chat")
+
+                                        
+                                       
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="btn btn-sm btn-primary disabled" aria-disabled="true">
+                                        @(responseDict.ContainsKey("btnChat") ? responseDict["btnChat"] : "Chat")
+                                    </span>
+                                }
+                            </td>
+                        </tr>
+                        slNo++;
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            @if (!string.IsNullOrEmpty(ViewBag.Error))
+            {
+                <p>@ViewBag.Error</p>
+            }
+            else{
+                <p>@(responseDict.ContainsKey("msgNoActiveNotices") ? responseDict["msgNoActiveNotices"] : "No Active Notices available for selected dates.")</p>
+            }
+        }      
+    </div>
+
+    <!-- Back Button -->
+    <div class="back-button">
+        <button class="btn-back" onclick="window.location.href='@Url.Action("DashboardView", "Vendor")'">
+            @(responseDict.ContainsKey("btnBackToDashboard") ? responseDict["btnBackToDashboard"] : "Back to Dashboard")
+        </button>
+    </div>
+</div>
+<div class="modal fade" id="confirmCloseModal" tabindex="-1" aria-labelledby="confirmCloseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title" id="confirmCloseModalLabel">Confirm Close</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to close this Request?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="confirmCloseBtn" class="btn btn-success">Yes, Close</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        function filterNotices() {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const status = document.getElementById('filterStatus').value;
+            const priority = document.getElementById('filterPriority').value;
+
+            // Construct the URL with query parameters
+            const url = `@Url.Action("ActiveNotices", "Vendor")` +
+                `?fromDate=${encodeURIComponent(fromDate)}` +
+                `&toDate=${encodeURIComponent(toDate)}` +
+                `&status=${encodeURIComponent(status)}` +
+                `&priority=${encodeURIComponent(priority)}`;
+
+            // Redirect to the ActiveNotices action with filters
+            window.location.href = url;
+        }
+
+        const gstin = '@gstin';
+        function goToUnreadNotices() {
+            window.location.href = `@Url.Action("UnreadNotices", "Vendor")?ClientGSTIN=${encodeURIComponent(gstin)}`;
+        }
+        function showConfirmPopup(element) {
+            var url = element.getAttribute('data-request-url');
+            var confirmBtn = document.getElementById('confirmCloseBtn');
+            confirmBtn.setAttribute('href', url);
+            var myModal = new bootstrap.Modal(document.getElementById('confirmCloseModal'));
+            myModal.show();
+        }
+    </script>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+
+    <script>
+        const userName = "@ViewBag.userName"; // current logged-in user
+
+        var baseUrl = '@Url.Content("~/")';
+        let hubUrl = baseUrl + "chathub";       
+        console.log("SignalR Hub URL:", hubUrl); // Log the hub URL for debugging
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl(hubUrl)
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+
+        connection.start()
+            .then(() => {
+                console.log("✅ SignalR connected (ActiveNotices)");
+
+                // Join all chat groups for each visible request number
+                document.querySelectorAll(".chat-link[data-requestnumber]").forEach(el => {
+                    const reqNo = el.getAttribute("data-requestnumber");
+                    connection.invoke("JoinGroup", reqNo);
+                    console.log("📡 Joined group:", reqNo);
+                });
+            })
+            .catch(err => {
+                console.error("❌ SignalR connection error:", err);
+            });
+
+
+
+        connection.on("ReceiveMessage", function (requestNumber, sender, message, time) {
+            if (sender === userName) return; // ✅ Don't show red dot to sender
+
+            const chatLink = document.querySelector(`#chat-${requestNumber}`);
+            if (chatLink) {
+                const indicator = chatLink.querySelector(".chat-indicator");
+                if (indicator) {
+                    indicator.style.display = "inline"; // ✅ Show red dot only to receiver
+                }
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Attach click handler for chat links
+            document.querySelectorAll(".chat-link").forEach(link => {
+                link.addEventListener("click", function (e) {
+                    const requestNumber = this.getAttribute("data-requestnumber");
+                    const gstin = this.getAttribute("data-gstin");
+                    const targetUrl = this.getAttribute("data-href");
+
+                    var baseUrl = '@Url.Content("~/")';
+                    let markAsReadUrl = baseUrl + "Vendor/MarkAsRead";                   
+                    console.log("🔵 Mark as read URL:", markAsReadUrl);
+                    
+                    fetch(markAsReadUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `requestNumber=${encodeURIComponent(requestNumber)}&gstin=${encodeURIComponent(gstin)}`
+                    })
+                        .then(response => {
+                            if (!response.ok) throw new Error("Failed to mark as read");
+                            // ✅ Redirect to actual chat page
+                            window.location.href = targetUrl;
+                        })
+                        .catch(error => {
+                            console.error("Error marking messages as read:", error);
+                            // Still go to chat even if marking fails
+                            window.location.href = targetUrl;
+                        });
+
+                });
+            });
+        });
+
+
+
+    </script>
+}

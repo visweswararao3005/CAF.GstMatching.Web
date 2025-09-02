@@ -1,0 +1,134 @@
+﻿@{
+    ViewData["Title"] = "Completed Tickets";
+
+    var tickets = ViewBag.Tickets as List<CAF.GstMatching.Models.PurchaseTicketModel.TicketsStatusModel> ?? new List<CAF.GstMatching.Models.PurchaseTicketModel.TicketsStatusModel>();
+	var responseDict = ViewBag.ResponseDict as Dictionary<string, string> ?? new Dictionary<string, string>();
+
+	// Sort tickets by Completed_Date in descending order (latest first)
+	if (tickets != null)
+	{
+		tickets = tickets.OrderByDescending(t => t.CompletedDate)
+						.ToList();
+	}
+
+    // Calculate default dates
+    var today = DateTime.Today;
+    var yesterday = today.AddDays(-1);
+    // Format dates as yyyy-MM-dd for HTML date input
+    var defaultFromDate = yesterday.ToString("yyyy-MM-dd");
+    var defaultToDate = today.ToString("yyyy-MM-dd");
+    // Explicitly convert ViewBag values to string, handling null or non-string types
+    var fromDate = ViewBag.FromDate != null ? ViewBag.FromDate.ToString("yyyy-MM-dd") : defaultFromDate;
+    var toDate = ViewBag.ToDate != null ? ViewBag.ToDate.ToString("yyyy-MM-dd") : defaultToDate;
+}
+
+@{
+    <link rel="stylesheet" href="~/css/ClosedTaskV.css" />
+}
+
+<div class="dashboard-body">
+    <!-- Current Requests Header and Date Filter in one line -->
+    <div class="header-filter-container">
+        <h4>Purchase Register - Closed Requests</h4>
+        <div class="date-filter">
+            <label for="fromDate">From Date:</label>
+            <input type="date" id="fromDate" name="fromDate" value="@fromDate" max="@DateTime.Today.ToString("yyyy-MM-dd")">
+            <label for="toDate">To Date:</label>
+            <input type="date" id="toDate" name="toDate" value="@toDate" max="@DateTime.Today.ToString("yyyy-MM-dd")">
+            <button class="btn-search" onclick="filterTickets()">Search</button>
+        </div>
+    </div>
+    <!-- Table container with internal scroll -->
+    <div class="completed-tickets">
+        @if (tickets != null && tickets.Any())
+        {
+            <table class="ticket-table">
+                <thead>
+                    <tr>
+						<th style="width: 6%">@(responseDict.ContainsKey("lblSLNo") ? responseDict["lblSLNo"] : "SL No")</th> <!-- SL No column -->
+                        <th style="width: 15%">@(responseDict.ContainsKey("lblTicketNumber") ? responseDict["lblTicketNumber"] : "Request Number")</th>
+
+                        <th style="width: 15%">@(responseDict.ContainsKey("lblTxtFileName") ? responseDict["lblTxtFileName"] : "File Name")</th>
+
+                        <th style="width: 18%">@(responseDict.ContainsKey("lblCreatedDate") ? responseDict["lblCreatedDate"] : "Created Date and Time")</th>
+                        <th style="width: 18%">@(responseDict.ContainsKey("lblUploadDate") ? responseDict["lblUploadDate"] : "Upload Date and Time")</th>
+                @*      <th style="width: 13%">@(responseDict.ContainsKey("lblFinancialYear") ? responseDict["lblFinancialYear"] : "Financial Year")</th>
+                        <th style="width: 10%">@(responseDict.ContainsKey("lblPeriodType") ? responseDict["lblPeriodType"] : "Period Type")</th> 
+                        <th style="width: 10%">@(responseDict.ContainsKey("lblTxtPeriod") ? responseDict["lblTxtPeriod"] : "Period")</th> *@
+                        
+                        <th style="width: 10%">@(responseDict.ContainsKey("lblStatus") ? responseDict["lblStatus"] : "Status")</th>
+						<th style="width: 20%">@(responseDict.ContainsKey("lblCompletedDate") ? responseDict["lblCompletedDate"] : "Completion Date and Time")</th>
+                    </tr>
+                </thead>
+                <tbody>
+					@{
+						int slNo = 1; // Counter for serial number
+					}
+                    @foreach (var ticket in tickets)
+                    {
+                        @if (!string.IsNullOrEmpty(ticket.TicketStatus) && ticket.TicketStatus.Equals("Completed", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <tr>
+								<td>@slNo</td>
+                                <td>
+                                    @ticket.RequestNo
+                                @*    <a href="@Url.Action("CompareResults", "Vendor", new { requestNo = ticket.RequestNo, ClientGSTIN = ticket.ClientGSTIN })">
+                                        @ticket.RequestNo
+                                    </a>  *@
+                                </td>
+                                <td>
+                                    <a href="@Url.Action("ExportInvoiceFile", "Admin", new { requestNo = ticket.RequestNo, ClientGSTIN = ticket.ClientGSTIN })"
+                                       class="btn-analyse">
+                                        @ticket.FileName
+                                    </a>
+                                </td>
+                                <td>@ticket.RequestCreatedDate?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td>
+                                <td>@ticket.RequestUpdatedDate?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td>
+                                @*  <td>@ticket.Txn_Period</td> *@
+                                
+                               @* <td>@ticket.TicketStatus</td> *@
+                                <td>
+                                    <a href="@Url.Action("ExportReport", "Admin", new { requestNo = ticket.RequestNo, fileName = ticket.FileName, ClientGSTIN = ticket.ClientGSTIN })"
+                                       class="btn-analyse">
+                                        @(responseDict.ContainsKey("TicketStatus") ? responseDict["TicketStatus"] : @ticket.TicketStatus)
+                                    </a>
+                                </td>
+                                <td>@ticket.CompletedDate?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td>
+
+                            </tr>
+							slNo++;
+                        }
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            @if (!string.IsNullOrEmpty(ViewBag.Error))
+            {
+                <p>@ViewBag.Error</p>
+            }
+            else
+            {
+            <p>@(responseDict.ContainsKey("msgNoCompletedTickets") ? responseDict["msgNoCompletedTickets"] : "No Closed Requests available for selected dates.")</p>
+            }
+        }
+    </div>
+
+	<!-- Back Button -->
+	<div class="back-button">
+		<button class="btn-back" onclick="window.location.href='@Url.Action("DashboardView", "Vendor")'">
+			@(responseDict.ContainsKey("btnBackToDashboard") ? responseDict["btnBackToDashboard"] : "Back to Dashboard")
+		</button>
+	</div>
+</div>
+
+<script>
+    function filterTickets() {
+        const fromDate = document.getElementById('fromDate').value;
+        const toDate = document.getElementById('toDate').value;
+
+        // Redirect with query parameters to persist dates
+        window.location.href = `@Url.Action("ClosedRequests", "Vendor")` + `?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`;
+    }
+</script>

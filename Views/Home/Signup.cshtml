@@ -1,0 +1,343 @@
+﻿@using static CAF.GstMatching.Web.Controllers.HomeController
+@{
+    ViewData["Title"] = "SignUp Page";
+    var responseDict = ViewBag.ResponseDict as Dictionary<string, string> ?? new Dictionary<string, string>();
+    var tjMessage = ViewBag.tjMessage as string;
+    var RegfailedMessage = ViewBag.ErrMessages as string;
+    var successMessage = ViewBag.SuccessMessage as string;
+    // Retrieve submitted form values from ViewBag
+    var formValues = ViewBag.FormValues as Dictionary<string, string> ?? new Dictionary<string, string>();
+}
+
+<link rel="stylesheet" href="~/css/Signup.css" />
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 20px; text-align: center;">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(tjMessage))
+{
+    <div class="modal fade" id="tjMessageModal" tabindex="-1" role="dialog" aria-labelledby="tjMessageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="tjMessageModalLabel">Message</h5>
+                </div>
+                <div class="modal-body">
+                    @tjMessage
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var modalEl = document.getElementById('tjMessageModal');
+            if (modalEl) {
+                var modal = new bootstrap.Modal(modalEl, {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+                modal.show();
+                hideLoadingOverlay(); // Hide loading overlay when modal is shown
+            }
+        });
+    </script>
+}
+else if (responseDict.Count > 0)
+{
+    <div class="register-container">
+        <div class="left">
+            <h3>@responseDict["txtRegisterinfo6"]</h3>
+            <h3>@responseDict["txtRegisterinfo7"]</h3>
+            <h3>@responseDict["txtRegisterinfo8"]</h3>
+        </div>
+
+        <div class="right">
+            <form action="@Url.Action("Signup", "Home")" method="POST" id="signupForm">
+                <input type="email" id="lblBussinesseMail" name="lblBussinesseMail"
+                       placeholder="@responseDict["lblBussinesseMail"]"
+                       value="@(formValues.ContainsKey("lblBussinesseMail") ? formValues["lblBussinesseMail"] : "")"
+                       required pattern="[a-z0-9._%+-]+*#64;[a-z0-9.-]+\.[a-z]{2,}$">
+
+                <input type="text" id="lblFullName" name="lblFullName"
+                       placeholder="@responseDict["lblFullName"]"
+                       value="@(formValues.ContainsKey("lblFullName") ? formValues["lblFullName"] : "")"
+                       required pattern="^[A-Za-z\s]{2,50}$">
+
+                <input type="text" id="lblOrganizationName" name="lblOrganizationName"
+                       placeholder="@responseDict["lblOrganizationName"]"
+                       value="@(formValues.ContainsKey("lblOrganizationName") ? formValues["lblOrganizationName"] : "")"
+                       required pattern="^[A-Za-z0-9\s]{2,100}$">
+
+
+                <div class="gstin-builder-row">
+                    <select id="ddlStateCode" name="ddlStateCode" required>
+                        <option value="">Select State</option>
+                        @if (ViewBag.StateCodeList != null)
+                        {
+                            foreach (var item in ViewBag.StateCodeList)
+                            {
+                                <option value="@item.StateCode">@item.StateCode - @item.StateName </option>
+                            }
+                        }
+                    </select>
+
+                    <input type="text" id="txtPAN" name="txtPAN" placeholder="PAN Number" required pattern="^[A-Z]{5}[0-9]{4}[A-Z]{1}$"
+                           value="@(formValues.ContainsKey("txtPAN") ? formValues["txtPAN"] : "")" />
+
+                    <input type="text" id="txtEntity" name="txtEntity" placeholder="Entity Number" required pattern="^[0-9A-Z]{1}$"
+                           value="@(formValues.ContainsKey("txtEntity") ? formValues["txtEntity"] : "")" />
+
+                    <input type="text" id="txtZ" name="txtZ" placeholder="Default 'Z'" required pattern="^[A-Z]{1}$"
+                           value="@(formValues.ContainsKey("txtZ") ? formValues["txtZ"] : "")" />
+
+
+                    <input type="text" id="txtChecksum" name="txtChecksum" placeholder="Checksum" required pattern="^[0-9A-Z]{1}$"
+                           value="@(formValues.ContainsKey("txtChecksum") ? formValues["txtChecksum"] : "")" />
+
+                </div>
+
+                <input type="text" id="lblGSTIN" name="lblGSTIN"
+                       placeholder="@responseDict["lblGSTIN"]"
+                       value="@(formValues.ContainsKey("lblGSTIN") ? formValues["lblGSTIN"] : "")"
+                       readonly
+                       required pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$" />
+
+
+                <input type="text" id="lblAddress" name="lblAddress"
+                       placeholder="@responseDict["lblAddress"]"
+                       value="@(formValues.ContainsKey("lblAddress") ? formValues["lblAddress"] : "")"
+                       required pattern="^[A-Za-z0-9\s,.-]{5,200}$">
+
+                <input type="tel" id="lblPhoneNo" name="lblPhoneNo"
+                       placeholder="@responseDict["lblPhoneNo"]"
+                       value="@(formValues.ContainsKey("lblPhoneNo") ? formValues["lblPhoneNo"] : "")"
+                       required pattern="^[6-9]\d{9}$">
+
+                @if (!string.IsNullOrEmpty(RegfailedMessage))
+                {
+                    <div class="alert-danger">@RegfailedMessage</div>
+                }
+
+                <button type="submit" class="wrap" id="btnRegister">@responseDict["btnRegister"]</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div id="successModal" class="Custom-modal">
+            <div class="Custom-modal-content" id="modalContent">
+                <p>@successMessage</p>
+                <button class="modal-button" onclick="closeModal()">OK</button>
+            </div>
+        </div>
+    }
+}
+
+<script>
+
+    // Function to show loading overlay
+    function showLoadingOverlay() {
+        document.getElementById("loadingOverlay").style.display = "flex";
+    }
+
+    // Function to hide loading overlay
+    function hideLoadingOverlay() {
+        document.getElementById("loadingOverlay").style.display = "none";
+    }
+
+    // Show modal if it exists
+    function showModalIfExists() {
+        var modal = document.getElementById('successModal');
+        if (modal) {
+            console.log('Modal displayed');
+            modal.style.display = 'flex';
+            hideLoadingOverlay(); // Hide loading overlay when modal is shown
+        }
+    }
+
+    // Close modal and clear form
+    function closeModal() {
+        try {
+            var modal = document.getElementById('successModal');
+            if (modal) {
+                modal.style.display = 'none';
+                console.log('Modal closed');
+            }
+            // Clear all form inputs client-side
+            var form = document.getElementById('signupForm');
+            if (form) {
+                form.reset();
+                //console.log('Form cleared');
+            }
+
+            window.location.href = '@Url.Action("Signup", "Home")';
+        } catch (error) {
+            console.error('Error in closeModal:', error);
+        }
+    }
+
+    // Draggable modal functionality
+    (function () {
+        var modalContent = document.getElementById('modalContent');
+        if (modalContent) {
+            var isDragging = false;
+            var currentX;
+            var currentY;
+            var initialX;
+            var initialY;
+            var xOffset = 0;
+            var yOffset = 0;
+
+            modalContent.addEventListener('mousedown', startDragging);
+
+            function startDragging(e) {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+
+                if (e.target === modalContent || e.target.tagName === 'P') {
+                    isDragging = true;
+                }
+
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', stopDragging);
+            }
+
+            function drag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+
+                    xOffset = currentX;
+                    yOffset = currentY;
+
+                    setTranslate(currentX, currentY, modalContent);
+                }
+            }
+
+            function setTranslate(xPos, yPos, el) {
+                el.style.transform = `translate(${xPos}px, ${yPos}px)`;
+            }
+
+            function stopDragging() {
+                isDragging = false;
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('mouseup', stopDragging);
+            }
+        }
+    })();
+
+    function generateGSTIN() {
+        const stateCode = document.getElementById('ddlStateCode').value;
+        const pan = document.getElementById('txtPAN').value.toUpperCase();
+        const entity = document.getElementById('txtEntity').value.toUpperCase();
+        const z = document.getElementById('txtZ').value.toUpperCase(); // <-- added
+        const checksum = document.getElementById('txtChecksum').value.toUpperCase();
+        const gstinField = document.getElementById('lblGSTIN');
+
+        const panValid = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan);
+        const entityValid = /^[0-9A-Z]{1}$/.test(entity);
+        const zValid = /^[A-Z]{1}$/.test(z); // <-- validate Z
+        const checksumValid = /^[0-9A-Z]{1}$/.test(checksum);
+
+        // Update validation UI
+        document.getElementById('txtPAN').classList.toggle('invalid-input', !panValid && pan.length > 0 && pan.length <= 10);
+        document.getElementById('txtEntity').classList.toggle('invalid-input', !entityValid && entity.length === 1);
+        document.getElementById('txtZ').classList.toggle('invalid-input', !zValid && z.length === 1); // <-- UI
+        document.getElementById('txtChecksum').classList.toggle('invalid-input', !checksumValid && checksum.length === 1);
+
+        let gstin = '';
+        if (stateCode) gstin += stateCode;
+        if (panValid) gstin += pan;
+        if (entityValid) gstin += entity;
+        if (zValid) gstin += z;
+        if (checksumValid) gstin += checksum;
+
+        gstinField.value = gstin;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        showModalIfExists();
+        // Check for error message and hide loading overlay if present
+        const hasError = @Json.Serialize(!string.IsNullOrEmpty(RegfailedMessage));
+        if (hasError) {
+            hideLoadingOverlay();
+        }
+
+        // Add submit event listener to show loading overlay
+        document.getElementById('signupForm').addEventListener('submit', function () {
+            showLoadingOverlay();
+        });
+    });
+
+    // Add event listeners
+    ['ddlStateCode', 'txtPAN', 'txtEntity', 'txtChecksum'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', generateGSTIN);
+    });
+
+    // Enforce PAN input: uppercase, only alphanumeric, max 10 chars
+    const panField = document.getElementById('txtPAN');
+
+    function validatePAN() {
+        const pan = panField.value.toUpperCase();
+        const panValid = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan);
+        panField.classList.toggle('invalid-input', !panValid && pan.length > 0 && pan.length <= 10);
+    }
+
+    panField.addEventListener('input', function () {
+        const el = this;
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+
+        let raw = el.value;
+        let val = raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (val.length > 10) val = val.substring(0, 10);
+
+        const valueChanged = raw !== val;
+        el.value = val;
+
+        if (valueChanged) {
+            const offset = val.length - raw.length;
+            el.setSelectionRange(start + offset, end + offset);
+        }
+
+        validatePAN();
+        generateGSTIN();
+    });
+
+    panField.addEventListener('blur', validatePAN);
+
+    document.getElementById('txtEntity').addEventListener('input', function () {
+        let val = this.value.toUpperCase().replace(/[^0-9A-Z]/g, '');
+        if (val.length > 1) val = val.substring(0, 1);
+        this.value = val;
+        generateGSTIN(); // Call *after* correction
+    });
+
+    document.getElementById('txtChecksum').addEventListener('input', function () {
+        let val = this.value.toUpperCase().replace(/[^0-9A-Z]/g, '');
+        if (val.length > 1) val = val.substring(0, 1);
+        this.value = val;
+        generateGSTIN(); // Call *after* correction
+    });
+
+    document.getElementById('txtZ').addEventListener('input', function () {
+        let val = this.value.toUpperCase().replace(/[^A-Z]/g, '');
+        if (val.length > 1) val = val.substring(0, 1);
+        this.value = val;
+        generateGSTIN();
+    });
+
+</script>

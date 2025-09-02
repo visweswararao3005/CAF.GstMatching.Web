@@ -1,0 +1,184 @@
+﻿
+.form-control {
+    width: 400px; /* Increased width for dropdowns and inputs */
+    padding: 8px 12px; /* Slightly increased padding for better appearance */
+}
+
+.file-input {
+    width: 600px; /* Increased width for file input */
+    padding: 8px 12px; /* Consistent padding with other form controls */
+}
+
+.dropdown-with-arrow {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpolyline points="6 9 12 15 18 9"%3E%3C/polyline%3E%3C/svg%3E');
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+}
+
+.row {
+    margin-bottom: 15px; /* Space between rows */
+}
+
+.form-group {
+    margin-bottom: 10px; /* Increase the bottom margin for all form groups to ensure consistent spacing */
+}
+
+.label-container {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between label and button within the label container */
+    /*  margin-top: 10px; /* Add some top margin to separate it from the previous field */
+}
+
+.form-group label[for="financialYear"]::after,
+.form-group label[for="periodtype"]::after,
+.form-group label[for="period"]::after,
+.form-group label[for="gstFile"]::after {
+    content: " *";
+    color: red;
+}
+
+.form-group label[for="salesFinancialYear"]::after,
+.form-group label[for="salesPeriodtype"]::after,
+.form-group label[for="salesPeriod"]::after,
+.form-group label[for="salesGstFile"]::after {
+    content: " *";
+    color: red;
+}
+
+/* Back button styling */
+.back-button {
+    margin-top: 15px;
+    text-align: right;
+    border: none;
+    position: fixed;
+    bottom: 50px;
+    right: 70px;
+    display: flex;
+    gap: 15px;
+    z-index: 999;
+}
+
+.btn-back {
+    padding: 8px 16px;
+    background-color: #6c757d;
+    color: white;
+    margin-top: 15px;
+}
+
+    .btn-back:hover {
+        background-color: #5a6268;
+    }
+
+/* Spinner Animation */
+.spinner {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #007BFF;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Error message scrollbar styling */
+.error-message-scroll {
+    width: 88%;
+    height: 120px; /* Fixed height for scrollbar to appear */
+    overflow-y: auto; /* Vertical scrollbar only when content overflows */
+    padding: 2px; /* Ensure padding for better look */
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: #fff;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 400px;
+    text-align: center;
+    border-radius: 5px;
+    position: relative;
+    cursor: move; /* Indicate the modal is draggable */
+}
+
+.modal-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+    .modal-button:hover {
+        background-color: #45a049;
+    }
+
+.custom-file-upload {
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 60%;
+}
+
+    .custom-file-upload input[type="text"] {
+        flex-grow: 1;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px 0 0 4px;
+        background: #f9f9f9;
+        cursor: pointer;
+    }
+
+    .custom-file-upload button {
+        padding: 8px 16px;
+        border: 1px solid #ccc;
+        border-left: none;
+        border-radius: 0 4px 4px 0;
+        background: #007bff;
+        color: white;
+        cursor: pointer;
+    }
+
+        .custom-file-upload button:hover {
+            background: #0056b3;
+        }
+
+    .custom-file-upload input[type="file"] {
+        display: none;
+    }
+
+.text-danger {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}

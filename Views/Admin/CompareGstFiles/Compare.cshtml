@@ -1,0 +1,442 @@
+﻿<!-- Views/Report/Index.cshtml -->
+@{
+    ViewData["Title"] = "Compare GST File";
+    var reportData = ViewBag.ReportDataList as List<CAF.GstMatching.Models.CompareGst.CompareGstResultModel> ?? new List<CAF.GstMatching.Models.CompareGst.CompareGstResultModel>();
+    var responseDict = ViewBag.ResponseDict as Dictionary<string, string> ?? new Dictionary<string, string>();
+    var summary = ViewBag.Summary as CAF.GstMatching.Models.CompareGst.SummaryExcelModel;
+
+    //var reportData = ViewBag.ReportDataList as List<dynamic> ?? new List<dynamic>();
+    var pendingCount = ViewBag.PendingCount ?? 0;
+    var completedCount = ViewBag.CompletedCount ?? 0;
+    var ticket = ViewBag.Ticket as CAF.GstMatching.Models.PurchaseTicketModel.TicketsStatusModel;
+}
+
+@{
+    <link rel="stylesheet" href="~/css/Compare.css" />
+}
+
+<div class="dashboard-body">
+    <!-- Table container with internal scroll -->
+    <div class="completed-tickets">
+        @if (reportData.Any())
+        {
+            <table class="ticket-table">
+                @{
+                    var totalinvoicetax = summary.catagory1InvoiceSum + summary.catagory2InvoiceSum + summary.catagory3InvoiceSum +
+                                                        summary.catagory4InvoiceSum + summary.catagory5InvoiceSum + summary.catagory6InvoiceSum +
+                                                        summary.catagory7InvoiceSum + summary.catagory8InvoiceSum;
+
+                    var totalportaltax = summary.catagory1PortalSum + summary.catagory2PortalSum + summary.catagory3PortalSum +
+                    summary.catagory4PortalSum + summary.catagory5PortalSum + summary.catagory6PortalSum +
+                    summary.catagory7PortalSum + summary.catagory8PortalSum;
+
+                    var totalinvoicecount = summary.catagory1InvoiceNumber + summary.catagory2InvoiceNumber + summary.catagory3InvoiceNumber +
+                    summary.catagory4InvoiceNumber + summary.catagory5InvoiceNumber + summary.catagory6InvoiceNumber +
+                    summary.catagory7InvoiceNumber + summary.catagory8InvoiceNumber;
+
+                    var totalportalcount = summary.catagory1PortalNumber + summary.catagory2PortalNumber + summary.catagory3PortalNumber +
+                    summary.catagory4PortalNumber + summary.catagory5PortalNumber + summary.catagory6PortalNumber +
+                    summary.catagory7PortalNumber + summary.catagory8PortalNumber; 
+
+                    var grandtotaltax = totalinvoicetax - totalportaltax;
+                    var grandtotalcount = totalinvoicecount + totalportalcount;
+                    string[] matchType =
+                                        {
+                                "1_Exactly_Matched_GST_INV_DT_TAXB_TAX",
+                                "2_Matched_With_Tolerance_GST_INV_DT_TAXB_TAX",
+
+                                "3_Partially_Matched_GST_INV",
+                                "4_Partially_Matched_GST_DT",
+                                "5_Probable_Matched_GST_TAXB",
+
+                                "6_UnMatched_Excess_or_Short_1_Invoicewise",
+                                "Available_In_PR_Not_In_Portal",
+                                "Available_In_Portal_Not_In_PR"
+                                };
+                    string GetCategory(string Match_Type)
+                    {
+                        switch (Match_Type)
+                        {
+                            case "6_UnMatched_Excess_or_Short_1_Invoicewise":             
+                            case "Available_In_PR_Not_In_Portal":
+                            case "Available_In_Portal_Not_In_PR":				
+                                return "UnMatched";
+
+                            case "5_Probable_Matched_GST_TAXB":
+                            case "4_Partially_Matched_GST_DT":
+                            case "3_Partially_Matched_GST_INV":               
+                                return "Partially_Matched";
+
+                            case "1_Exactly_Matched_GST_INV_DT_TAXB_TAX":
+                            case "2_Matched_With_Tolerance_GST_INV_DT_TAXB_TAX":
+                                return "Completely_Matched";
+
+                            default:
+                                return "Unknown";
+                        }
+                    }
+                    string GetMatching_Results(string Category)
+                    {
+                        switch (Category)
+                        {
+                            case "UnMatched":
+                                return "IMS Pending";
+
+                            case "Partially_Matched":
+                            case "Completely_Matched":
+                                return "IMS Accept";
+                            default:
+                                return "Unknown";
+                        }
+
+                    }
+
+                }
+                <!-- New header row -->
+                <thead>
+                    <tr class="header-row">
+                        <th colspan="10">Request Number: @ticket?.RequestNo | Client Name: @ticket?.EXERTUSERNAME | Client GSTIN: @ticket?.ClientGSTIN | Period: @ticket?.TxnPeriod </th>
+
+                        @* Financial Year: @ticket?.FinancialYear | Period Type: @ticket?.PeriodType |  *@
+                    </tr>
+                    <tr class="header-row">
+                        <th colspan="10">Created Date and Time: @ticket?.RequestCreatedDate | Upload Date and Time: @ticket?.RequestUpdatedDate</th>
+                    </tr>
+                    <tr>
+                        <th style="width: 13%">@(responseDict.ContainsKey("lblMatchingResult") ? responseDict["lblMatchingResult"] : "Matching Result")</th>
+                        <th style="width: 15%">@(responseDict.ContainsKey("lblCategories") ? responseDict["lblCategories"] : "Categories")</th>
+                        <th style="width: 15%">@(responseDict.ContainsKey("lblMatchType") ? responseDict["lblMatchType"] : "Match Type")</th>
+                        <th style="width: 10%">@(responseDict.ContainsKey("lblInvoice") ? responseDict["lblInvoice"] : "Invoice Tax sum")</th>
+                        <th style="width: 10%">@(responseDict.ContainsKey("lblPortal") ? responseDict["lblPortal"] : "Portal Tax sum")</th>
+                        <th style="width: 10%">@(responseDict.ContainsKey("lblGrandTotal") ? responseDict["lblGrandTotal"] : "GrandTotal sum")</th>
+                        <th style="width: 9%">@(responseDict.ContainsKey("lblInvoiceCount") ? responseDict["lblInvoiceCount"] : "Invoice count")</th>
+                        <th style="width: 8%">@(responseDict.ContainsKey("lblPortalCount") ? responseDict["lblPortalCount"] : "Portal count")</th>
+                        <th style="width: 5%">@(responseDict.ContainsKey("lblGrandTotalCount") ? responseDict["lblGrandTotalCount"] : "GrandTotal count")</th>
+                        <th style="width: 5%">@(responseDict.ContainsKey("lblPercentageMatching") ? responseDict["lblPercentageMatching"] : "% Matching")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>@GetMatching_Results(GetCategory(matchType[0]))</td>
+                        <td>@GetCategory(matchType[0])</td>
+                        <td>@matchType[0]</td>
+                        <td>@summary.catagory1InvoiceSum</td>
+                        <td>@(-1 * summary.catagory1PortalSum)</td>
+                        <td>@(summary.catagory1InvoiceSum - summary.catagory1PortalSum)</td>
+                        <td>@summary.catagory1InvoiceNumber</td>
+                        <td>@summary.catagory1PortalNumber</td>
+                        <td>@(summary.catagory1InvoiceNumber + summary.catagory1PortalNumber)</td>
+                        <td>@(Math.Round(((summary.catagory1InvoiceNumber.GetValueOrDefault() + summary.catagory1PortalNumber.GetValueOrDefault()) / (grandtotalcount == 0 ? 1 : (decimal)grandtotalcount)) * 100, 2))% </td>
+                    </tr>
+                    <tr>
+                        <td>@GetMatching_Results(GetCategory(matchType[1]))</td>
+                        <td>@GetCategory(matchType[1])</td>
+                        <td>@matchType[1]</td>
+                        <td>@summary.catagory2InvoiceSum</td>
+                        <td>@(-1 * summary.catagory2PortalSum)</td>
+                        <td>@(summary.catagory2InvoiceSum - summary.catagory2PortalSum)</td>
+                        <td>@summary.catagory2InvoiceNumber</td>
+                        <td>@summary.catagory2PortalNumber</td>
+                        <td>@(summary.catagory2InvoiceNumber + summary.catagory2PortalNumber)</td>
+                        <td>@(Math.Round(((summary.catagory2InvoiceNumber.GetValueOrDefault() + summary.catagory2PortalNumber.GetValueOrDefault()) / (grandtotalcount == 0 ? 1 : (decimal)grandtotalcount)) * 100, 2))% </td>
+                    </tr>
+                    <tr>
+                        <td>@GetMatching_Results(GetCategory(matchType[2]))</td>
+                        <td>@GetCategory(matchType[2])</td>
+                        <td>@matchType[2]</td>
+                        <td>@summary.catagory3InvoiceSum</td>
+                        <td>@(-1 * summary.catagory3PortalSum)</td>
+                        <td>@(summary.catagory3InvoiceSum - summary.catagory3PortalSum)</td>
+                        <td>@summary.catagory3InvoiceNumber</td>
+                        <td>@summary.catagory3PortalNumber</td>
+                        <td>@(summary.catagory3InvoiceNumber + summary.catagory3PortalNumber)</td>
+                        <td>@(Math.Round(((summary.catagory3InvoiceNumber.GetValueOrDefault() + summary.catagory3PortalNumber.GetValueOrDefault()) / (grandtotalcount == 0 ? 1 : (decimal)grandtotalcount)) * 100, 2))% </td>
+                    </tr>
+                    <tr>
+                        <td>@GetMatching_Results(GetCategory(matchType[3]))</td>
+                        <td>@GetCategory(matchType[3])</td>
+                        <td>@matchType[3]</td>
+                        <td>@summary.catagory4InvoiceSum</td>
+                        <td>@(-1 * summary.catagory4PortalSum)</td>
+                        <td>@(summary.catagory4InvoiceSum - summary.catagory4PortalSum)</td>
+                        <td>@summary.catagory4InvoiceNumber</td>
+                        <td>@summary.catagory4PortalNumber</td>
+                        <td>@(summary.catagory4InvoiceNumber + summary.catagory4PortalNumber)</td>
+                        <td>@(Math.Round(((summary.catagory4InvoiceNumber.GetValueOrDefault() + summary.catagory4PortalNumber.GetValueOrDefault()) / (grandtotalcount == 0 ? 1 : (decimal)grandtotalcount)) * 100, 2))% </td>
+
+                    </tr>
+                    <tr>
+                        <td>@GetMatching_Results(GetCategory(matchType[4]))</td>
+                        <td>@GetCategory(matchType[4])</td>
+                        <td>@matchType[4]</td>
+                        <td>@summary.catagory5InvoiceSum</td>
+                        <td>@(-1 * summary.catagory5PortalSum)</td>
+                        <td>@(summary.catagory5InvoiceSum - summary.catagory5PortalSum)</td>
+                        <td>@summary.catagory5InvoiceNumber</td>
+                        <td>@summary.catagory5PortalNumber</td>
+                        <td>@(summary.catagory5InvoiceNumber + summary.catagory5PortalNumber)</td>
+                        <td>@(Math.Round(((summary.catagory5InvoiceNumber.GetValueOrDefault() + summary.catagory5PortalNumber.GetValueOrDefault()) / (grandtotalcount == 0 ? 1 : (decimal)grandtotalcount)) * 100, 2))% </td>
+                    </tr>
+                    <tr>
+                        <td>@GetMatching_Results(GetCategory(matchType[5]))</td>
+                        <td>@GetCategory(matchType[5])</td>
+                        <td>
+                            @if (@summary.catagory6InvoiceNumber > 0)
+                            {
+                                <a href="@Url.Action("getUnMatchedData", "Admin", new { requestNo = @ticket?.RequestNo ,ClientGstin =@ticket?.ClientGSTIN, matchType = matchType[5] })">
+                                    @matchType[5]
+                                </a>
+                            }
+                            else
+                            {
+                                @matchType[5]
+                            }
+                        </td>
+                        <td>@summary.catagory6InvoiceSum</td>
+                        <td>@(-1 * summary.catagory6PortalSum)</td>
+                        <td>@(summary.catagory6InvoiceSum - summary.catagory6PortalSum)</td>
+                        <td>@summary.catagory6InvoiceNumber</td>
+                        <td>@summary.catagory6PortalNumber</td>
+                        <td>@(summary.catagory6InvoiceNumber + summary.catagory6PortalNumber)</td>
+                        <td>@(Math.Round(((summary.catagory6InvoiceNumber.GetValueOrDefault() + summary.catagory6PortalNumber.GetValueOrDefault()) / (grandtotalcount == 0 ? 1 : (decimal)grandtotalcount)) * 100, 2))% </td>
+
+                    </tr>
+                    <tr>
+                        <td>@GetMatching_Results(GetCategory(matchType[6]))</td>
+                        <td>@GetCategory(matchType[6])</td>
+                        <td>
+                            @if (@summary.catagory7InvoiceNumber > 0)
+                            {
+                                <a href="@Url.Action("getUnMatchedData", "Admin", new { requestNo = @ticket?.RequestNo ,ClientGstin =@ticket?.ClientGSTIN, matchType = matchType[6] })">
+                                    @matchType[6]
+                                </a>
+                            }
+                            else
+                            {
+                                @matchType[6]
+                            }
+                        </td>
+                        <td>@summary.catagory7InvoiceSum</td>
+                        <td>@(-1 * summary.catagory7PortalSum)</td>
+                        <td>@(summary.catagory7InvoiceSum - summary.catagory7PortalSum)</td>
+                        <td>@summary.catagory7InvoiceNumber</td>
+                        <td>@summary.catagory7PortalNumber</td>
+                        <td>@(summary.catagory7InvoiceNumber + summary.catagory7PortalNumber)</td>
+                        <td>@(Math.Round(((summary.catagory7InvoiceNumber.GetValueOrDefault() + summary.catagory7PortalNumber.GetValueOrDefault()) / (grandtotalcount == 0 ? 1 : (decimal)grandtotalcount)) * 100, 2))% </td>
+
+                    </tr>
+
+                    <tr>
+                        <td>@GetMatching_Results(GetCategory(matchType[7]))</td>
+                        <td>@GetCategory(matchType[7])</td>
+                        <td>
+                            @if (@summary.catagory8PortalNumber > 0)
+                            {
+                                <a href="@Url.Action("getUnMatchedData", "Admin", new { requestNo = @ticket?.RequestNo ,ClientGstin =@ticket?.ClientGSTIN, matchType = matchType[7] })">
+                                    @matchType[7]
+                                </a>
+                            }
+                            else
+                            {
+                                @matchType[7]
+                            }
+                        </td>
+                        <td>@summary.catagory8InvoiceSum</td>
+                        <td>@(-1 * summary.catagory8PortalSum)</td>
+                        <td>@(summary.catagory8InvoiceSum - summary.catagory8PortalSum)</td>
+                        <td>@summary.catagory8InvoiceNumber</td>
+                        <td>@summary.catagory8PortalNumber</td>
+                        <td>@(summary.catagory8InvoiceNumber + summary.catagory8PortalNumber)</td>
+                        <td>@(Math.Round(((summary.catagory8InvoiceNumber.GetValueOrDefault() + summary.catagory8PortalNumber.GetValueOrDefault()) / (grandtotalcount == 0 ? 1 : (decimal)grandtotalcount)) * 100, 2))% </td>
+                    
+                    </tr> 
+
+
+                  @*  <tr>
+                        <td>@GetMatching_Results(GetCategory(matchType[8]))</td>
+                        <td>@GetCategory(matchType[8])</td>
+                        <td>@matchType[8]</td>
+                        <td>@summary.catagory9InvoiceSum</td>
+                        <td>@(-1 * summary.catagory9PortalSum)</td>
+                            <td>@(summary.catagory9InvoiceSum - summary.catagory9PortalSum)</td>
+                            <td>@summary.catagory9InvoiceNumber</td>
+                            <td>@summary.catagory9PortalNumber</td>
+                            <td>@(summary.catagory9InvoiceNumber + summary.catagory9PortalNumber)</td>
+                            <td></td>
+
+                    
+                    </tr>
+
+                    <tr>
+                        <td>@GetMatching_Results(GetCategory(matchType[9]))</td>
+                        <td>@GetCategory(matchType[9])</td>
+                        <td>@matchType[9]</td>
+                        <td>@summary.catagory10InvoiceSum</td>
+                        <td>@(-1 * summary.catagory10PortalSum)</td>
+                            <td>@(summary.catagory10InvoiceSum - summary.catagory10PortalSum)</td>
+                            <td>@summary.catagory10InvoiceNumber</td>
+                            <td>@summary.catagory10PortalNumber</td>
+                            <td>@(summary.catagory10InvoiceNumber + summary.catagory10PortalNumber)</td>
+                            <td></td>
+                    
+                    </tr> *@
+
+                    <tr>
+                         <td></td>
+                         <td></td>
+                         <td>Grand Total</td>
+                         <td>@totalinvoicetax</td>
+                         <td>@(-1 * totalportaltax)</td>
+                         <td>@grandtotaltax</td>
+                         <td>@totalinvoicecount</td>
+                         <td>@totalportalcount</td>
+                         <td>@grandtotalcount</td>
+                         <td></td>
+                    </tr>
+                </tbody>  
+
+            </table>
+        }
+        else
+        {
+            <p>@(responseDict.ContainsKey("msgNoReportData") ? responseDict["msgNoReportData"] : "No report data available.")</p>
+        }
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 20px; text-align: center;">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal" style="display: none;">
+        <div class="modal-content" id="modalContent">
+            <p id="modalMessage"></p>
+            <button class="modal-button" onclick="closeModal()">OK</button>
+        </div>
+    </div>
+
+    <div class="button-container">
+        <button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("OpenTaskCSV", "Admin")'">Back to Current Requests</button>
+        <button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("ExportReport", "Admin",new { requestNo = ticket?.RequestNo, fileName= @ticket?.FileName, ClientGSTIN = @ticket?.ClientGSTIN })'">Export Comparison Results</button>
+        <button class="action-button btn btn-primary" onclick="closeRequest('@ticket?.RequestNo', '@ticket?.ClientGSTIN')">Close Request</button>
+    </div>
+    @if (ViewBag.Message != null)
+    {
+        <div class="alert alert-success mt-1 error-message-scroll">
+            <p>✅ Comparison Results Exported Successfully.</p>
+        </div>
+    }
+</div>
+<!-- Success Message -->
+@if (ViewBag.Message != null)
+{
+    <div class="alert alert-success mt-1 error-message-scroll">
+        <p>✅ Comparison Results Exported Successfully.</p>
+    </div>
+}
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    function closeRequest(requestNo, clientGSTIN) {
+        // Show loading overlay
+        $('#loadingOverlay').show();
+
+        $.ajax({
+            url: '@Url.Action("CloseRequest", "Admin")',
+            type: 'POST',
+            data: { requestNo: requestNo, ClientGSTIN: clientGSTIN },
+            success: function (response) {
+                // Hide loading overlay
+                $('#loadingOverlay').hide();
+
+                // Update modal content
+                var modalMessage = $('#modalMessage');
+                if (response.success) {
+                    modalMessage.html(`✅ Request Closed: <strong>Request ${requestNo} has been Closed Successfully and Comparison Results have been sent to Registered Email.</strong>`);
+                } else {
+                    modalMessage.html('❌ Error: <strong>' + (response.message || 'An error occurred while processing the request.') + '</strong>');
+                }
+
+                // Show modal
+                $('#successModal').show();
+            },
+            error: function () {
+                // Hide loading overlay
+                $('#loadingOverlay').hide();
+
+                // Show error in modal
+                $('#modalMessage').html('❌ Error: <strong>An error occurred while processing the request.</strong>');
+                $('#successModal').show();
+            }
+        });
+    }
+
+    function closeModal() {
+        try {
+            var modal = document.getElementById('successModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            // Redirect to ClosedRequests
+            window.location.href = '@Url.Action("ClosedRequests", "Admin")';
+        } catch (error) {
+            console.error('Error in closeModal:', error);
+        }
+    }
+
+    // Draggable modal functionality
+    (function () {
+        var modalContent = document.getElementById('modalContent');
+        if (modalContent) {
+            var isDragging = false;
+            var currentX;
+            var currentY;
+            var initialX;
+            var initialY;
+            var xOffset = 0;
+            var yOffset = 0;
+
+            modalContent.addEventListener('mousedown', startDragging);
+
+            function startDragging(e) {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+
+                if (e.target === modalContent || e.target.tagName === 'P') {
+                    isDragging = true;
+                }
+
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', stopDragging);
+            }
+
+            function drag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+
+                    xOffset = currentX;
+                    yOffset = currentY;
+
+                    setTranslate(currentX, currentY, modalContent);
+                }
+            }
+
+            function setTranslate(xPos, yPos, el) {
+                el.style.transform = `translate(${xPos}px, ${yPos}px)`;
+            }
+
+            function stopDragging() {
+                isDragging = false;
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('mouseup', stopDragging);
+            }
+        }
+    })();
+</script>

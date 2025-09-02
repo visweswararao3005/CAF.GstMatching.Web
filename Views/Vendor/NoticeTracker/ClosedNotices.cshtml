@@ -1,0 +1,146 @@
+﻿@{
+    ViewData["Title"] = "vendor Closed Notices";
+    var responseDict = ViewBag.ResponseDict as Dictionary<string, string> ?? new Dictionary<string, string>();
+    var notices = ViewBag.Notices as List<CAF.GstMatching.Models.NoticeDataModel> ?? new List<CAF.GstMatching.Models.NoticeDataModel>();
+
+    // Sort notices by Created Date in descending order (latest first)
+    if (notices != null)
+    {
+        notices = notices.OrderByDescending(n => n.ClosedDatetime).ToList();
+    }
+
+    // Calculate default dates
+    var today = DateTime.Today;
+    var yesterday = today.AddDays(-1);
+    var defaultFromDate = yesterday.ToString("yyyy-MM-dd");
+    var defaultToDate = today.ToString("yyyy-MM-dd");
+    var fromDate = ViewBag.FromDate != null ? ViewBag.FromDate.ToString("yyyy-MM-dd") : defaultFromDate;
+    var toDate = ViewBag.ToDate != null ? ViewBag.ToDate.ToString("yyyy-MM-dd") : defaultToDate;
+    var priority = ViewBag.priority ?? "All";
+}
+
+<link rel="stylesheet" href="~/css/ClosedTaskV.css" />
+
+<div class="dashboard-body">
+    <!-- Current Requests Header and Filter Section -->
+    <div class="header-filter-container">
+        <h4>@(responseDict.ContainsKey("lblActiveNotices") ? responseDict["lblActiveNotices"] : "Closed Notices")</h4>
+        <div class="date-filter">
+            <label for="fromDate">@(responseDict.ContainsKey("lblFromDate") ? responseDict["lblFromDate"] : "From Date"):</label>
+            <input type="date" id="fromDate" name="fromDate" value="@fromDate" max="@DateTime.Today.ToString("yyyy-MM-dd")">
+            <label for="toDate">@(responseDict.ContainsKey("lblToDate") ? responseDict["lblToDate"] : "To Date"):</label>
+            <input type="date" id="toDate" name="toDate" value="@toDate" max="@DateTime.Today.ToString("yyyy-MM-dd")">            
+            <label for="filterPriority">@(responseDict.ContainsKey("lblPriority") ? responseDict["lblPriority"] : "Priority"):</label>
+            <select id="filterPriority" class="form-select">
+                <option value="All" selected="@(priority == "All")">
+                    @(responseDict.ContainsKey("lblAll") ? responseDict["lblAll"] : "All")
+                </option>
+                <option value="High" selected="@(priority == "High")">
+                    @(responseDict.ContainsKey("lblHigh") ? responseDict["lblHigh"] : "High")
+                </option>
+                <option value="Medium" selected="@(priority == "Medium")">
+                    @(responseDict.ContainsKey("lblMedium") ? responseDict["lblMedium"] : "Medium")
+                </option>
+                <option value="Low" selected="@(priority == "Low")">
+                    @(responseDict.ContainsKey("lblLow") ? responseDict["lblLow"] : "Low")
+                </option>
+            </select>
+            <button class="btn-search" onclick="filterNotices()">@(responseDict.ContainsKey("btnSearch") ? responseDict["btnSearch"] : "Search")</button>
+        </div>
+    </div>
+
+    <!-- Table container with internal scroll -->
+    <div class="closed-notices">
+        @if (notices != null && notices.Any())
+        {
+            <table class="ticket-table" id="noticesTable">
+                <thead>
+                    <tr>
+                        <th style="width: 5%">@(responseDict.ContainsKey("lblSLNo") ? responseDict["lblSLNo"] : "SL No")</th>
+                        <th style="width: 5%">@(responseDict.ContainsKey("lblRequestNumber") ? responseDict["lblRequestNumber"] : "Request Number")</th>
+                        <th style="width: 18%">@(responseDict.ContainsKey("lblNoticeTitle") ? responseDict["lblNoticeTitle"] : "Notice Title")</th>
+                        <th style="width: 12%">@(responseDict.ContainsKey("lblNoticeDate") ? responseDict["lblNoticeDate"] : "Notice Date")</th>
+                        <th style="width: 17%">@(responseDict.ContainsKey("lblCreatedDate") ? responseDict["lblCreatedDate"] : "Created Date and Time")</th>
+                        <th style="width: 17%">@(responseDict.ContainsKey("lblCreatedDate") ? responseDict["lblCreatedDate"] : "Closed Date and Time")</th>
+                        <th style="width: 12%">@(responseDict.ContainsKey("lblPriority") ? responseDict["lblPriority"] : "Priority")</th>
+                        <th style="width: 12%">@(responseDict.ContainsKey("lblClosedBy") ? responseDict["lblClosedBy"] : "Closed By")</th>
+                        <th style="width: 12%">@(responseDict.ContainsKey("lblUploadedNotice") ? responseDict["lblUploadedNotice"] : "Uploaded Notice")</th>
+                        <th style="width: 7%">@(responseDict.ContainsKey("lblChatHistory") ? responseDict["lblChatHistory"] : "Chat")</th>
+                    </tr>
+                </thead>
+                <tbody class="table-body">
+                    @{
+                        int slNo = 1;
+                    }
+                    @foreach (var notice in notices)
+                    {
+                        <tr data-status="@notice.status" data-priority="@notice.Priority" data-date="@notice.NoticeDatetime?.ToString("yyyy-MM-dd")">
+                            <td>@slNo</td>
+                            <td>@notice.RequestNumber</td>
+                            <td>@notice.NoticeTitle</td>
+                            <td>@notice.NoticeDatetime?.ToString("yyyy-MMM-dd")</td>
+                            <td>@notice.CreatedDatetime?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td>
+                            <td>@notice.ClosedDatetime?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td>
+                            <td>
+                                <span class="badge @(notice.Priority == "High" ? "bg-danger" : notice.Priority == "Medium" ? "bg-warning text-dark" : "bg-success")">
+                                    @notice.Priority
+                                </span> 
+                            </td>
+                            <td>
+                                <span class="badge @("bg-success")">
+                                    @notice.ClosedBy
+                                </span>
+                            </td>
+                            <td style="text-align: center;">
+                                <a href="@Url.Action("PDF", "Admin" , new {req = notice.RequestNumber , gstin = notice.ClientGstin })" class="btn btn-sm btn-primary">
+                                    @(responseDict.ContainsKey("btnDownload") ? responseDict["btnDownload"] : "Download")
+                                </a>
+                            </td>
+                            <td>
+                                <a href="@Url.Action("ConversationChat", "Vendor", new { requestNo = notice.RequestNumber, ClientGSTIN = notice.ClientGstin, fromDate = fromDate, toDate = toDate, priority = priority })" class="btn btn-sm btn-primary">
+                                    @(responseDict.ContainsKey("btnView") ? responseDict["btnView"] : "View")
+                                </a>
+                            </td>
+                        </tr>
+                        slNo++;
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            @if (!string.IsNullOrEmpty(ViewBag.Error))
+            {
+                <p>@ViewBag.Error</p>
+            }
+            else
+            {
+                <p>@(responseDict.ContainsKey("msgNoClosedNotices") ? responseDict["msgNoClosedNotices"] : "No Closed Notices available for selected filters.")</p>
+            }
+        }
+    </div>
+
+    <!-- Back Button -->
+    <div class="back-button">
+        <button class="btn-back" onclick="window.location.href='@Url.Action("DashboardView", "Vendor")'">
+            @(responseDict.ContainsKey("btnBackToDashboard") ? responseDict["btnBackToDashboard"] : "Back to Dashboard")
+        </button>
+    </div>
+</div>
+
+<script>
+    function filterNotices() {
+        const fromDate = document.getElementById('fromDate').value;
+        const toDate = document.getElementById('toDate').value;
+        const priority = document.getElementById('filterPriority').value;
+
+        // Construct the URL with query parameters
+        const url = `@Url.Action("ClosedNotices", "Vendor")` +
+                    `?fromDate=${encodeURIComponent(fromDate)}` +
+                    `&toDate=${encodeURIComponent(toDate)}` +
+                    `&priority=${encodeURIComponent(priority)}`;
+
+        // Redirect to the ActiveNotices action with filters
+        window.location.href = url;
+    }
+</script>

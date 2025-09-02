@@ -1,0 +1,307 @@
+﻿<!-- Views/Report/Index.cshtml -->
+@{
+    ViewData["Title"] = "Compare Sales Ledger File";
+    var reportData = ViewBag.ReportDataList as List<CAF.GstMatching.Models.SLComparedDataModel>;
+    var responseDict = ViewBag.ResponseDict as Dictionary<string, string> ?? new Dictionary<string, string>();
+    var summary = ViewBag.Summary as CAF.GstMatching.Models.SLComparedDataModel;
+    string[] matchType = (ViewBag.MatchType as List<string>)?.ToArray();
+    decimal[] grandTotal = ViewBag.GrandTotal as decimal[];
+    int count = matchType.Length;
+    //var reportData = ViewBag.ReportDataList as List<dynamic> ?? new List<dynamic>();
+    var pendingCount = ViewBag.PendingCount ?? 0;
+    var completedCount = ViewBag.CompletedCount ?? 0;
+    var ticket = ViewBag.Ticket as CAF.GstMatching.Models.SalesLedgerTicketsModel;
+}
+
+@{
+    <link rel="stylesheet" href="~/css/Compare.css" />
+}
+<style>
+    .ticket-table {
+        width: 100%; /* Ensures table takes full width of its container */
+        height: calc(95vh - 200px); /* Sets table height to fill viewport minus space for buttons and padding */
+        border-collapse: collapse;
+        font-size: 11px;
+        overflow-y: auto; /* Adds vertical scrolling if needed */
+        margin: 0; /* Ensures no margin pushes it from the left */
+        padding: 0;
+        box-sizing: border-box; /* Ensures padding and borders don’t add to width */
+    }
+
+        .ticket-table td:nth-child(3),
+        .ticket-table td:nth-child(4),
+        .ticket-table td:nth-child(5),
+        .ticket-table td:nth-child(6),
+        .ticket-table td:nth-child(7),
+        .ticket-table td:nth-child(8),
+        .ticket-table td:nth-child(9),
+        .ticket-table td:nth-child(10) {
+            text-align: right;
+        }
+</style>
+
+<div class="dashboard-body">
+    <!-- Table container with internal scroll -->
+    <div class="completed-tickets">
+        @if (reportData.Any())
+        {
+            <div class="table-wrapper">
+            <table class="ticket-table">
+                @{
+                    decimal totalinvoicetax = Enumerable.Range(1, count).Sum(i => summary.GetType().GetProperty($"catagory{i}InvoiceSum")?.GetValue(summary) is decimal val ? val : 0);
+                    decimal totalEWayBilltax = Enumerable.Range(1, count).Sum(i => summary.GetType().GetProperty($"catagory{i}EWayWillSum")?.GetValue(summary) is decimal val ? val : 0);
+                    decimal totalEInvoicetax = Enumerable.Range(1, count).Sum(i => summary.GetType().GetProperty($"catagory{i}EInvoiceSum")?.GetValue(summary) is decimal val ? val : 0);
+
+                    decimal totalinvoicecount = Enumerable.Range(1, count).Sum(i => summary.GetType().GetProperty($"catagory{i}InvoiceNumber")?.GetValue(summary) is decimal val ? val : 0);
+                    decimal totalEWayBillcount = Enumerable.Range(1, count).Sum(i => summary.GetType().GetProperty($"catagory{i}EWayWillNumber")?.GetValue(summary) is decimal val ? val : 0);
+                    decimal totalEInvoicecount = Enumerable.Range(1, count).Sum(i => summary.GetType().GetProperty($"catagory{i}EInvoiceNumber")?.GetValue(summary) is decimal val ? val : 0);
+
+
+                    decimal grandtotaltax = 0;
+                    foreach (decimal value in grandTotal)
+                    {
+                        grandtotaltax += value;
+                    }
+                    decimal grandtotalcount = (decimal)totalinvoicecount + (decimal)totalEWayBillcount + (decimal)totalEInvoicecount;
+
+                    string GetCategory(string Match_Type)
+                    {
+                        // Define match groups using indexes
+                        var completelyMatchedTypes = new[] { matchType[0], matchType[1] };
+                        var partiallyMatchedTypes = new[] { matchType[2], matchType[3], matchType[4] };
+                        var unMatchedTypes = new[] { matchType[5], matchType[6], matchType[7], matchType[8], matchType[9], matchType[10], matchType[11] };
+
+                        if (completelyMatchedTypes.Contains(Match_Type))
+                            return "Completely_Matched";
+                        else if (partiallyMatchedTypes.Contains(Match_Type))
+                            return "Partially_Matched";
+                        else if (unMatchedTypes.Contains(Match_Type))
+                            return "UnMatched";
+                        else
+                            return "Unknown";
+                    }
+                }
+                <!-- New header row -->
+                <thead>
+                    <tr class="header-row sticky-top">
+                            <th colspan="11" class="full-header">Request Number: @ticket?.RequestNumber | Client Name: @ticket?.ClientName | Client GSTIN: @ticket?.ClientGstin | Period: @ticket?.Period | Created Date and Time: @ticket?.RequestCreatedDate | Upload Date and Time: @ticket?.RequestUpdatedDate</th>
+
+                        @* Financial Year: @ticket?.FinancialYear | Period Type: @ticket?.PeriodType |  *@
+                    </tr>
+                 @*   <tr class="header-row">
+                        <th colspan="11">Created Date and Time: @ticket?.RequestCreatedDate | Upload Date and Time: @ticket?.RequestUpdatedDate</th>
+                    </tr>   *@
+                    <tr>
+
+                        <th style="width: 10%">@(responseDict.ContainsKey("lblCategories") ? responseDict["lblCategories"] : "Categories")</th>
+                        <th style="width: 15%">@(responseDict.ContainsKey("lblCategories") ? responseDict["lblCategories"] : "MatchType")</th>
+
+                        <th style="width: 10%">@(responseDict.ContainsKey("lblInvoice") ? responseDict["lblInvoice"] : "Invoice Tax sum")</th>
+                        <th style="width: 10%">@(responseDict.ContainsKey("lblPortal") ? responseDict["lblPortal"] : "EWayBill Tax sum")</th>
+                        <th style="width: 10%">@(responseDict.ContainsKey("lblPortal") ? responseDict["lblPortal"] : "EInvoice Tax sum")</th>
+                        <th style="width: 10%">@(responseDict.ContainsKey("lblGrandTotal") ? responseDict["lblGrandTotal"] : "GrandTotal sum")</th>
+
+                        <th style="width: 9%">@(responseDict.ContainsKey("lblInvoiceCount") ? responseDict["lblInvoiceCount"] : "Invoice count")</th>
+                        <th style="width: 8%">@(responseDict.ContainsKey("lblPortalCount") ? responseDict["lblPortalCount"] : "EWayBill count")</th>
+                        <th style="width: 8%">@(responseDict.ContainsKey("lblPortalCount") ? responseDict["lblPortalCount"] : "EInvoice count")</th>
+                        <th style="width: 5%">@(responseDict.ContainsKey("lblGrandTotalCount") ? responseDict["lblGrandTotalCount"] : "GrandTotal count")</th>
+
+                        <th style="width: 5%">@(responseDict.ContainsKey("lblPercentageMatching") ? responseDict["lblPercentageMatching"] : "% Matching")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < count; i++)
+                    {
+                        <tr>
+                            <td>@GetCategory(matchType[i])</td>
+                            <td>@matchType[i]</td>
+
+                            <td>@summary.GetType().GetProperty($"catagory{i + 1}InvoiceSum")?.GetValue(summary)</td>
+                            <td>@(1 * (decimal?)summary.GetType().GetProperty($"catagory{i + 1}EWayWillSum")?.GetValue(summary))</td>
+                            <td>@(1 * (decimal?)summary.GetType().GetProperty($"catagory{i + 1}EInvoiceSum")?.GetValue(summary))</td>
+                            <td>@grandTotal[i] </td>
+
+                            <td>@summary.GetType().GetProperty($"catagory{i + 1}InvoiceNumber")?.GetValue(summary)</td>
+                            <td>@summary.GetType().GetProperty($"catagory{i + 1}EWayWillNumber")?.GetValue(summary)</td>
+                            <td>@summary.GetType().GetProperty($"catagory{i + 1}EInvoiceNumber")?.GetValue(summary)</td>
+                            <td>
+                                @((decimal?)summary.GetType().GetProperty($"catagory{i + 1}InvoiceNumber")?.GetValue(summary)
+                                    + (decimal?)summary.GetType().GetProperty($"catagory{i + 1}EWayWillNumber")?.GetValue(summary)
+                                    + (decimal?)summary.GetType().GetProperty($"catagory{i + 1}EInvoiceNumber")?.GetValue(summary))
+                            </td>
+
+                            <td>
+                                @{
+                                    var totalCount = ((decimal?)summary.GetType().GetProperty($"catagory{i + 1}InvoiceNumber")?.GetValue(summary)
+                                    + (decimal?)summary.GetType().GetProperty($"catagory{i + 1}EWayWillNumber")?.GetValue(summary)
+                                    + (decimal?)summary.GetType().GetProperty($"catagory{i + 1}EInvoiceNumber")?.GetValue(summary)).GetValueOrDefault();
+                                    var percentage = Math.Round((decimal)totalCount / (grandtotalcount == 0 ? 1 : (decimal)grandtotalcount) * 100, 2);
+                                }
+                                @percentage%
+                            </td>
+                        </tr>
+                    }
+                    <tr>
+                        <td></td>
+                        <td>Grand Total</td>
+
+                        <td>@totalinvoicetax</td>
+                        <td>@(1 * totalEWayBilltax)</td>
+                        <td>@(1 * totalEInvoicetax)</td>
+                        <td>@grandtotaltax</td>
+
+                        <td>@totalinvoicecount</td>
+                        <td>@totalEWayBillcount</td>
+                        <td>@totalEInvoicecount</td>
+                        <td>@grandtotalcount</td>
+
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            </div>
+        }
+        else
+        {
+            <p>@(responseDict.ContainsKey("msgNoReportData") ? responseDict["msgNoReportData"] : "No report data available.")</p>
+        }
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 20px; text-align: center;">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal" style="display: none;">
+        <div class="modal-content" id="modalContent">
+            <p id="modalMessage"></p>
+            <button class="modal-button" onclick="closeModal()">OK</button>
+        </div>
+    </div>
+
+    <div class="button-container">
+        <button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("SalesLedgerCurrentRequestsCSV", "Admin")'">Back to Current Requests</button>
+        <button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("ExportSLReport", "Admin",new { requestNo = ticket?.RequestNumber, ClientGSTIN = @ticket?.ClientGstin })'">Export Comparison Results</button>
+        <button class="action-button btn btn-primary" onclick="SLcloseRequest('@ticket?.RequestNumber', '@ticket?.ClientGstin')">Close Request</button>
+
+    </div>
+    @if (ViewBag.Message != null)
+    {
+        <div class="alert alert-success mt-1 error-message-scroll">
+            <p>✅ Comparison Results Exported Successfully.</p>
+        </div>
+    }
+</div>
+<!-- Success Message -->
+@if (ViewBag.Message != null)
+{
+    <div class="alert alert-success mt-1 error-message-scroll">
+        <p>✅ Comparison Results Exported Successfully.</p>
+    </div>
+}
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    function SLcloseRequest(RequestNumber, ClientGstin) {
+        // Show loading overlay
+        $('#loadingOverlay').show();
+
+        $.ajax({
+            url: '@Url.Action("CloseSLRequest", "Admin")',
+            type: 'POST',
+            data: { RequestNumber: RequestNumber, ClientGstin: ClientGstin },
+            success: function (response) {
+                // Hide loading overlay
+                $('#loadingOverlay').hide();
+
+                // Update modal content
+                var modalMessage = $('#modalMessage');
+                if (response.success) {
+                    modalMessage.html(`✅ Request Closed: <strong>Request ${RequestNumber} has been Closed Successfully and Comparison Results have been sent to Registered Email.</strong>`);
+                } else {
+                    modalMessage.html('❌ Error: <strong>' + (response.message || 'An error occurred while processing the request.') + '</strong>');
+                }
+
+                // Show modal
+                $('#successModal').show();
+            },
+            error: function () {
+                // Hide loading overlay
+                $('#loadingOverlay').hide();
+
+                // Show error in modal
+                $('#modalMessage').html('❌ Error: <strong>An error occurred while processing the request.</strong>');
+                $('#successModal').show();
+            }
+        });
+    }
+
+    function closeModal() {
+        try {
+            var modal = document.getElementById('successModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            // Redirect to ClosedRequests
+            window.location.href = '@Url.Action("SalesLedgerClosedRequests", "Admin")';
+        } catch (error) {
+            console.error('Error in closeModal:', error);
+        }
+    }
+
+    // Draggable modal functionality
+    (function () {
+        var modalContent = document.getElementById('modalContent');
+        if (modalContent) {
+            var isDragging = false;
+            var currentX;
+            var currentY;
+            var initialX;
+            var initialY;
+            var xOffset = 0;
+            var yOffset = 0;
+
+            modalContent.addEventListener('mousedown', startDragging);
+
+            function startDragging(e) {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+
+                if (e.target === modalContent || e.target.tagName === 'P') {
+                    isDragging = true;
+                }
+
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', stopDragging);
+            }
+
+            function drag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+
+                    xOffset = currentX;
+                    yOffset = currentY;
+
+                    setTranslate(currentX, currentY, modalContent);
+                }
+            }
+
+            function setTranslate(xPos, yPos, el) {
+                el.style.transform = `translate(${xPos}px, ${yPos}px)`;
+            }
+
+            function stopDragging() {
+                isDragging = false;
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('mouseup', stopDragging);
+            }
+        }
+    })();
+</script>

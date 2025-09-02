@@ -1,0 +1,213 @@
+﻿@{
+    ViewData["Title"] = "Compare GST eInvoice File";
+    var responseDict = ViewBag.ResponseDict as Dictionary<string, string> ?? new Dictionary<string, string>();
+    var ticket = ViewBag.Ticket as CAF.GstMatching.Models.SalesLedgerTicketsModel;
+    var fileName = ViewBag.FileName as string ?? null;
+    var fromDate = ViewBag.fromDate;
+    var toDate = ViewBag.toDate;
+}
+
+@{
+    <link rel="stylesheet" href="~/css/CompareGST.css" />
+}
+
+<div class="container mt-1">
+    <h3 class="text-primary">You can compare GST Sales Register EInvoice and EWayBill Files</h3>
+
+    <table class="gst-comparison-table">
+        <tr>
+            <th>Request Number</th>
+            <td>@ticket?.RequestNumber</td>
+        </tr>
+        @*<tr>
+            <th>Client Name</th>
+            <td>@ticket?.ClientName</td>
+        </tr>
+        <tr>
+            <th>Client GSTIN</th>
+            <td>@ticket?.ClientGstin</td>
+        </tr>*@
+        <tr>
+            <th>File Name</th>
+            <td>@ticket?.FileName</td>
+        </tr>
+        <tr>
+            <th>Period</th>
+            <td>@ticket?.Period</td>
+        </tr>
+        <tr>
+            <th>Created Date and Time</th>
+            <td>@ticket?.RequestCreatedDate?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td>
+        </tr>
+       @* <tr>
+            <th>Upload Date and Time</th>
+            <td>@ticket?.RequestUpdatedDate?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td>
+        </tr> *@
+        
+    </table>
+</div>
+
+<!-- Loading Overlay -->
+<div id="LoadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 20px; text-align: center;">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+</div>
+
+<form asp-action="CompareSalesLedgerCSV" asp-controller="Admin" method="post" enctype="multipart/form-data" id="eInvoiceGstForm">
+    <input type="hidden" name="ticketnumber" value="@ticket?.RequestNumber" />
+    <input type="hidden" name="ClientGSTIN" value="@ticket?.ClientGstin" />
+
+    <div class="form-group">
+        <div class="label-container">
+            <label for="EInvoice" class="d-inline-block">Select GST Sales Register EInvoice Portal File :</label>
+            <a href="@Url.Action("DownloadEInvoiceSampleFileCSV", "Admin")">SRSamplePortalEInvoice.csv</a>
+            <a href="@Url.Action("DownloadEInvoiceSampleFileXLS", "Admin")">SRSamplePortalEInvoice.xls</a>
+            <a href="@Url.Action("DownloadEInvoiceSampleFileXLSX", "Admin")">SRSamplePortalEInvoice.xlsx</a>
+        </div>
+        <div class="custom-file-upload">
+            <input type="text" id="EInvoiceNameDisplay" readonly placeholder="No file selected" />
+            <button type="button" onclick="document.getElementById('EInvoice').click()">Browse</button>
+            <input type="file" name="EInvoice" id="EInvoice" accept=".csv, .xls, .xlsx" />
+        </div>
+        <div id="EInvoiceError" class="text-danger" style="display: none;">Please select a file.</div>
+    </div>
+
+    <div class="form-group">
+        <div class="label-container">
+            <label for="EWayBill" class="d-inline-block">Select GST Sales Register EWayBill Portal File :</label>
+            <a href="@Url.Action("DownloadEWayBillSampleFileCSV", "Admin")">SRSamplePortalEWayBill.csv</a>
+            <a href="@Url.Action("DownloadEWayBillSampleFileXLS", "Admin")">SRSamplePortalEWayBill.xls</a>
+            <a href="@Url.Action("DownloadEWayBillSampleFileXLSX", "Admin")">SRSamplePortalEWayBill.xlsx</a>
+        </div>
+        <div class="custom-file-upload">
+            <input type="text" id="EWayBillNameDisplay" readonly placeholder="No file selected" />
+            <button type="button" onclick="document.getElementById('EWayBill').click()">Browse</button>
+            <input type="file" name="EWayBill" id="EWayBill" accept=".csv, .xls, .xlsx" />
+        </div>
+        <div id="EWayBillFileError" class="text-danger" style="display: none;">Please select a file.</div>
+    </div>
+
+    <div class="form-group mt-1">
+        <button type="submit" class="btn btn-primary">Compare</button>
+    </div>
+</form>
+
+<!-- Error Message -->
+@if (ViewBag.ErrorMessage != null)
+{
+    <div class="alert alert-danger mt-1 error-message-scroll-SR">
+        ❌ @Html.Raw(((string)ViewBag.ErrorMessage).Replace("\n", "<br/>"))
+    </div>
+}
+
+<div class="button-container">
+    <button class="action-button btn btn-primary" onclick="clearFormValuesAndRedirect()">Back to Current Requests</button>
+</div>
+
+@section Scripts {
+    <script>
+        // Function to save file names to sessionStorage
+        function saveFormValues() {
+            const formData = {
+                eWayBillFileName: document.getElementById("EWayBillNameDisplay").value,
+                eInvoiceFileName: document.getElementById("EInvoiceNameDisplay").value
+            };
+            sessionStorage.setItem("compareEInvoiceFormValues", JSON.stringify(formData));
+        }
+
+        // Function to update file name display
+        function updateFileNameDisplay(id, fileName) {
+            const fileNameDisplay = document.getElementById(id);
+            fileNameDisplay.value = fileName || "No file selected";
+        }
+
+        // Function to load file names from sessionStorage
+        function loadFormValues() {
+            const savedValues = sessionStorage.getItem("compareEInvoiceFormValues");
+            if (savedValues) {
+                const formData = JSON.parse(savedValues);
+                updateFileNameDisplay("EWayBillNameDisplay", formData.eWayBillFileName || "");
+                updateFileNameDisplay("EInvoiceNameDisplay", formData.eInvoiceFileName || "");
+            }
+        }
+
+        // Form submission handler
+        document.getElementById("eInvoiceGstForm").addEventListener("submit", function (event) {
+            var fileInput1 = document.getElementById("EWayBill");
+            var fileInput2 = document.getElementById("EInvoice");
+            var fileError1 = document.getElementById("EWayBillFileError");
+            var fileError2 = document.getElementById("EInvoiceError");
+            var hasError = false;
+
+            if (fileInput1.files.length === 0) {
+                fileError1.style.display = "block";
+                hasError = true;
+            } else {
+                fileError1.style.display = "none";
+            }
+
+            if (fileInput2.files.length === 0) {
+                fileError2.style.display = "block";
+                hasError = true;
+            } else {
+                fileError2.style.display = "none";
+            }
+
+            if (hasError) {
+                event.preventDefault();
+                return;
+            }
+
+            document.getElementById('LoadingOverlay').style.display = 'block';
+            saveFormValues();
+        });
+
+        // Load saved values and handle file input changes
+        document.addEventListener("DOMContentLoaded", function () {
+            // Check if there is an error message; if so, load saved values
+            const hasError = @Json.Serialize(ViewBag.ErrorMessage != null);
+            if (hasError) {
+                loadFormValues();
+            } else {
+                // Clear sessionStorage if there is no error (e.g., fresh page load)
+                sessionStorage.removeItem("compareEInvoiceFormValues");
+                updateFileNameDisplay("EWayBillNameDisplay", "");
+                updateFileNameDisplay("EInvoiceNameDisplay", "");
+            }
+
+            // Update file name display when a file is selected for first input
+            document.getElementById("EWayBill").addEventListener("change", function () {
+                const fileName = this.files[0]?.name || "";
+                updateFileNameDisplay("EWayBillNameDisplay", fileName);
+                saveFormValues();
+            });
+
+            // Update file name display when a file is selected for second input
+            document.getElementById("EInvoice").addEventListener("change", function () {
+                const fileName = this.files[0]?.name || "";
+                updateFileNameDisplay("EInvoiceNameDisplay", fileName);
+                saveFormValues();
+            });
+
+            // Trigger file input click when text input is clicked for first input
+            document.getElementById("EWayBillNameDisplay").addEventListener("click", function () {
+                document.getElementById("EWayBill").click();
+            });
+
+            // Trigger file input click when text input is clicked for second input
+            document.getElementById("EInvoiceNameDisplay").addEventListener("click", function () {
+                document.getElementById("EInvoice").click();
+            });
+        });
+
+        // Clear sessionStorage when navigating back to current requests
+        function clearFormValuesAndRedirect() {
+            sessionStorage.removeItem("compareEInvoiceFormValues");
+            updateFileNameDisplay("EWayBillNameDisplay", "");
+            updateFileNameDisplay("EInvoiceNameDisplay", "");
+            window.location.href = '@Url.Action("SalesLedgerCurrentRequestsCSV", "Admin", new { fromDate = fromDate, toDate = toDate })';
+        }
+    </script>
+}

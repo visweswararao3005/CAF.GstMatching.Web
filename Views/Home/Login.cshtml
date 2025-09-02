@@ -1,0 +1,131 @@
+﻿@{
+    ViewData["Title"] = "Login Page";
+    var responseDict = ViewBag.ResponseDict as Dictionary<string, string>;
+    var tjMessage = ViewBag.tjMessage as string;
+    var LoginfailedMessage = ViewBag.Message as string;
+    // Retrieve submitted form values from ViewBag
+    var formValues = ViewBag.FormValues as Dictionary<string, string> ?? new Dictionary<string, string>();
+}
+<link rel="stylesheet" href="~/css/Login.css" />
+
+@if (!string.IsNullOrEmpty(tjMessage))
+{
+    <div class="modal fade" id="tjMessageModal" tabindex="-1" role="dialog" aria-labelledby="tjMessageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="tjMessageModalLabel">Message</h5>
+                </div>
+                <div class="modal-body">
+                    @tjMessage
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var modalEl = document.getElementById('tjMessageModal');
+            if (modalEl) {
+                var modal = new bootstrap.Modal(modalEl, {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+                modal.show();
+            }
+        });
+    </script>
+}
+else if (responseDict != null && responseDict.Count > 0)
+{
+    <div class="login-container">
+        <div class="left">
+            <h1>@responseDict["txtWelcomeBack"]</h1>
+            <p>@responseDict["txtLoginInfo1"]</p>
+            <p>@responseDict["txtLoginInfo2"]</p>
+        </div>
+
+        <div class="right">
+            <span class="close-btn" aria-label="Close" onclick="location.href='@Url.Action("Index", "Home")';">
+                ×
+            </span>
+            <form action="@Url.Action("Login", "Home")" method="POST">
+                <label for="username">@responseDict["txtEnterDetails"]</label>
+                <input type="email" id="lblEmail" name="Email"
+                       placeholder="@responseDict["lblEmail"]"
+                       value="@(formValues.ContainsKey("Email") ? formValues["Email"] : "")"
+                       required>
+                <div class="password-container">
+                    <input type="password" id="lblPassword" name="password"
+                           placeholder="@responseDict["lblPassword"]"
+                           value="@(formValues.ContainsKey("password") ? formValues["password"] : "")"
+                           required>
+                    <span class="eye-icon" id="togglePassword">
+                        <i class="fa fa-eye"></i>
+                    </span>
+                </div>
+
+                <a href="#" id="btnForgetPassword">@responseDict["btnForgetPassword"]</a>
+                @if (!string.IsNullOrEmpty(LoginfailedMessage))
+                {
+                    <div class="alert-danger">@LoginfailedMessage</div>
+                }
+                <button id="btnsubmit" type="submit" class="wrap"><h4>@responseDict["btnLogin"]</h4></button>
+                <a class="signup" asp-controller="Home" asp-action="Signup">@responseDict["btnSignup"]</a>
+            </form>
+        </div>
+    </div>
+}
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+
+<script>
+    document.getElementById('togglePassword').addEventListener('click', function (e) {
+        var passwordField = document.getElementById('lblPassword');
+        var icon = this.querySelector('i');
+
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            passwordField.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+</script>
+
+<style>
+    .password-container {
+        position: relative;
+        width: 100%;
+    }
+
+        .password-container input {
+            width: 100%;
+            padding-right: 40px;
+        }
+
+    .eye-icon {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        cursor: pointer;
+        z-index: 1;
+        opacity: 0.5;
+    }
+
+        .eye-icon i {
+            font-size: 20px;
+        }
+
+    input::-ms-reveal,
+    input::-ms-clear {
+        display: none;
+    }
+</style>

@@ -1,0 +1,106 @@
+﻿
+.chat-container {
+    display: flex;
+    height: calc(100vh - 100px - 30px);
+}
+
+.left {
+    color: black;
+    flex: 1;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+    .left table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: #fff;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .left th,
+    .left td {
+        padding: 3px 10px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .left th {
+        background-color: #f1f1f1;
+        font-weight: 600;
+        width: 30%;
+        white-space: nowrap;
+    }
+
+    .left tr:nth-child(even) {
+        background-color: #fafafa;
+    }
+
+.description-cell {
+    max-height: 130px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    background-color: #fcfcfc;
+    border: 1px solid #e0e0e0;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.description-cellA {
+    max-height: 80px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    background-color: #fcfcfc;
+    border: 1px solid #e0e0e0;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.right {
+    flex: 1;
+    padding: 10px;
+    max-width: 580px;
+    box-sizing: border-box;
+}
+
+.chat-left, .chat-right {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+
+.chat-left {
+    align-items: flex-start;
+}
+
+.chat-right {
+    align-items: flex-end;
+}
+
+.button-container {
+    margin-top: auto;
+    padding-top: 10px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+@media (min-width: 1200px) {
+    .container, .container-lg, .container-md, .container-sm, .container-xl {
+        max-width: 1300px;
+    }
+}
+
+@media (min-width: 1600px) {
+    .container {
+        max-width: 1500px;
+    }
+}
+
+@media (min-width: 1920px) {
+    .container {
+        max-width: 1700px;
+    }
+}

@@ -1,0 +1,329 @@
+﻿/* Reset and Base Styles */
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden; /* Prevent page scroll unless needed */
+    font-family: 'Poppins', sans-serif;
+    background-color: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Main Content Container */
+.main-content {
+    flex: 1 0 auto; /* Takes available space, pushes footer down */
+    padding: 0;
+    width: 100%;
+    height: calc(100vh - 100px - 60px);
+    overflow: hidden; /* Hide scrollbars */
+}
+
+.login-container {
+    display: flex;
+    height: calc(100vh - 100px - 30px);
+}
+
+
+.left {
+    background-color: #5e5164;
+    color: white;
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+}
+
+    .left h1 {
+        font-size: 36px;
+        margin: 0 0 10px;
+    }
+
+    .left p {
+        font-size: 18px;
+        margin: 5px 0;
+    }
+
+.right {
+    flex: 1;
+    padding: 40px;
+    max-width: 580px;
+    box-sizing: border-box;
+    padding-top: 10px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+label {
+    margin-bottom: 0px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+input {
+    padding: 8px;
+    margin: 8px 0;
+    border: 1px solid #ccc;
+    border-radius: 12px;
+    font-size: 16px;
+    background-color: #dddddd;
+    width: 105%;
+}
+
+    input:focus {
+        border-color: #5e5164;
+        outline: none;
+    }
+
+button {
+    padding: 10px;
+    background-color: #5e5164;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 10px;
+    width: 105%;
+}
+
+    button:hover {
+        background-color: #5e5164;
+    }
+
+a {
+    text-decoration: none;
+    color: #5e5164;
+    margin-top: 10px;
+    text-align: center;
+    display: inline-block;
+    display: flex;
+    JUSTIFY-CONTENT: END;
+}
+
+    a:hover {
+        text-decoration: none;
+        cursor: pointer;
+        color: #5e5164;
+    }
+
+.signup {
+    text-align: center;
+    font-size: 14px;
+    display: block;
+    margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+    .login-container {
+        flex-direction: column;
+    }
+
+    .left, .right {
+        flex: none;
+        width: 100%;
+        padding: 20px;
+    }
+
+    .right {
+        max-width: 100%;
+    }
+}
+
+.close-btn {
+    background-color: transparent;
+    border: none;
+    font-size: 30px;
+    color: #333;
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    top: 10px;
+    right: -100%;
+}
+
+    .close-btn:hover {
+        color: red;
+    }
+
+
+/*Register styling*/
+.register-container {
+    display: flex;
+    height: 100%; /* Fill available height without overflow */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.btn-login, .btn-signup {
+    padding: 8px 20px;
+    border-radius: 25px;
+    font-weight: 500;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    margin-right: 10px;
+}
+
+/* Ensure footer and header don't interfere */
+.footer {
+    flex-shrink: 0;
+    height: 30px;
+    min-height: 30px;
+}
+
+.navbar {
+    top: 0;
+    flex-shrink: 0;
+    padding: 10px 0;
+    align-items: center; /* Vertically center items */
+    height: 90px; /* Fixed height for consistency */
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+    margin-left: 0; /* Remove default margin */
+    padding-left: 10px; /* Optional: Add small padding if needed */
+}
+
+.navbar-nav {
+    margin-right: 0; /* Remove default margin */
+    padding-right: 5px; /* Optional: Add small padding if needed */
+    display: flex;
+    align-items: flex-end;
+}
+
+.alert-success {
+    background-color: #dff0d8; /* Light green background (adjust if needed) */
+    color: #3c763d; /* Dark green text (adjust if needed) */
+    border: 1px solid #d6e9c6; /* Border color (adjust if needed) */
+    border-radius: 4px; /* Rounded corners (adjust if needed) */
+    padding: 10px 15px; /* Reduced top/bottom padding from typical 15px to 5px, keep left/right at 15px */
+    margin-bottom: 0px; /* Reduced margin to minimize external spacing */
+    text-align: left; /* Center the text (optional, based on screenshot) */
+}
+
+/* Modal styles */
+.Custom-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.Custom-modal-content {
+    background-color: #fff;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 400px;
+    text-align: center;
+    border-radius: 5px;
+    position: relative;
+    cursor: move; /* Indicate the modal is draggable */
+}
+
+.modal-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+    .modal-button:hover {
+        background-color: #45a049;
+    }
+
+.gstin-builder-row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 3px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+    .gstin-builder-row select {
+        width: 100px; /* Keep dropdown compact */
+        height: 40px; /* Optional: match height if needed */
+        padding: 3px;
+        border-radius: 10px;
+        font-size: 12px;
+        border: 1px solid #ccc;
+        background-color: #dddddd;
+    }
+
+    .gstin-builder-row input {
+        flex: 1;
+        min-width: 103px; /*  Increase width of inputs */
+        height: 40px; /* Increased height */
+        padding: 8px;
+        border-radius: 10px;
+        font-size: 12px;
+        border: 1px solid #ccc;
+        margin-top: 0px;
+        margin-bottom: 0px;
+    }
+
+.invalid-input {
+    border: 2px solid red;
+    color: red;
+}
+
+input::placeholder {
+    color: #999;
+}
+
+input.invalid-input::placeholder {
+    color: red;
+}
+
+
+/*   .gstin-builder-row select,
+    .gstin-builder-row input {
+        flex: 1;
+        padding: 5px;
+        border-radius: 10px;
+        font-size: 7px;
+        border: 1px solid #ccc;
+    } */
+
+
+
+/* Spinner Animation */
+.spinner {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #007BFF;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}

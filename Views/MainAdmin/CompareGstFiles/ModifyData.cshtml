@@ -1,0 +1,538 @@
+﻿@model CAF.GstMatching.Web.Models.EditableTablesViewModel
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
+@{
+    <link rel="stylesheet" href="~/css/ModifyData.css" />
+}
+
+@if (ViewBag.matchType == "Available_In_Portal_Not_In_PR")
+{
+    <div class="table-container">
+        <div class="table-wrappers">
+            <div class="table-header" style="display: flex; align-items: center; gap: 10px;">
+                <h4 style="margin: 0;">Portal Data</h4>
+                <p style="margin: 0; font-size: 0.9rem; color: #666;">(Total Rows: @Model.PortalTable?.Count())</p>
+            </div>
+            <div class="table-wrapper">
+                @if (Model.PortalTable != null && Model.PortalTable.Any() && Model.PortalTable.First().Keys.Count > 2)
+                {
+                    <table id="portalTable" class="display">
+                        <thead>
+                            <tr>
+                                @{
+                                    var columnHeaderIndex = 0;
+                                    var totalColumns = Model.PortalTable.First().Keys.Count;
+                                }
+                                <th class="sl-no">SL No</th>
+                                @foreach (var key in Model.PortalTable.First().Keys)
+                                {
+                                    var columnClass = key.ToLower() switch
+                                    {
+                                        "invoicenumber" => "col-invoice-number",
+                                        "invoicedate" => "col-invoice-date",
+                                        "suppliergstin" => "col-supplier-gstin",
+                                        "totaltax" => "col-total-tax",
+                                        _ => "col-default"
+                                    };
+                                    if (columnHeaderIndex == 0 || columnHeaderIndex == totalColumns - 1 || columnHeaderIndex == totalColumns - 2)
+                                    {
+                                        <th class="hide-col">@key</th>
+                                    }
+                                    else
+                                    {
+                                        <th class="@columnClass">@key</th>
+                                    }
+                                    columnHeaderIndex++;
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int slNo = 1;
+                            }
+                            @foreach (var row in Model.PortalTable)
+                            {
+                                <tr>
+                                    @{
+                                        var columnIndex = 0;
+                                    }
+                                    <td class="sl-no">@slNo</td>
+                                    @foreach (var value in row.Values)
+                                    {
+                                        if (columnIndex == 0 || columnIndex == row.Values.Count - 1 || columnIndex == row.Values.Count - 2)
+                                        {
+                                            <td class="hide-col">@value</td>
+                                        }
+                                        else if (columnIndex == 1)
+                                        {
+                                            <td class="read-only" contenteditable="false">@value</td>
+                                        }
+                                        else
+                                        {
+                                            <td>@value</td>
+                                        }
+                                        columnIndex++;
+                                    }
+                                </tr>
+                                slNo++;
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p>No valid data available for Portal Table (requires at least 3 columns).</p>
+                }
+            </div>
+        </div>
+        <div class="table-wrappers">
+            <div class="table-header" style="display: flex; align-items: center; gap: 10px;">
+                <h4 style="margin: 0;">Invoice Data</h4>
+                <p style="margin: 0; font-size: 0.9rem; color: #666;">(Total Rows: @Model.InvoiceTable?.Count())</p>
+            </div>
+            <div class="table-wrapper">
+                @if (Model.InvoiceTable != null && Model.InvoiceTable.Any() && Model.InvoiceTable.First().Keys.Count > 2)
+                {
+                    <table id="invoiceTable" class="display">
+                        <thead>
+                            <tr>
+                                @{
+                                    var columnHeaderIndex = 0;
+                                    var totalColumns = Model.InvoiceTable.First().Keys.Count;
+                                }
+                                <th class="sl-no">SL No</th>
+                                @foreach (var key in Model.InvoiceTable.First().Keys)
+                                {
+                                    var columnClass = key.ToLower() switch
+                                    {
+                                        "invoicenumber" => "col-invoice-number",
+                                        "invoicedate" => "col-invoice-date",
+                                        "suppliergstin" => "col-supplier-gstin",
+                                        "totaltax" => "col-total-tax",
+                                        _ => "col-default"
+                                    };
+                                    if (columnHeaderIndex == 0 || columnHeaderIndex == totalColumns - 1 || columnHeaderIndex == totalColumns - 2)
+                                    {
+                                        <th class="hide-col">@key</th>
+                                    }
+                                    else
+                                    {
+                                        <th class="@columnClass">@key</th>
+                                    }
+                                    columnHeaderIndex++;
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int slNo = 1;
+                            }
+                            @foreach (var row in Model.InvoiceTable)
+                            {
+                                <tr>
+                                    <td class="sl-no">@slNo</td>
+                                    @{
+                                        var columnIndex = 0;
+                                    }
+                                    @foreach (var value in row.Values)
+                                    {
+                                        var columnClass = Model.InvoiceTable.First().Keys.ElementAt(columnIndex).ToLower() switch
+                                        {
+                                            "invoicenumber" => "col-invoice-number",
+                                            "invoicedate" => "col-invoice-date",
+                                            "suppliergstin" => "col-supplier-gstin",
+                                            "totaltax" => "col-total-tax",
+                                            _ => "col-default"
+                                        };
+                                        if (columnIndex == 0 || columnIndex == row.Values.Count - 1 || columnIndex == row.Values.Count - 2)
+                                        {
+                                            <td class="hide-col">@value</td>
+                                        }
+                                        else if (columnIndex == 1)
+                                        {
+                                            <td class="read-only @columnClass" contenteditable="false">@value</td>
+                                        }
+                                        else
+                                        {
+                                            <td class="@columnClass" contenteditable="true">@value</td>
+                                        }
+                                        columnIndex++;
+                                    }
+                                </tr>
+                                slNo++;
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p>No valid data available for Invoice Table (requires at least 3 columns).</p>
+                }
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="table-container">
+        <div class="table-wrappers">
+            <div class="table-header" style="display: flex; align-items: center; gap: 10px;">
+                <h4 style="margin: 0;">Invoice Data</h4>
+                <p style="margin: 0; font-size: 0.9rem; color: #666;">(Total Rows: @Model.InvoiceTable?.Count())</p>
+            </div>
+            <div class="table-wrapper">
+                @if (Model.InvoiceTable != null && Model.InvoiceTable.Any() && Model.InvoiceTable.First().Keys.Count > 2)
+                {
+                    <table id="invoiceTable" class="display">
+                        <thead>
+                            <tr>
+                                @{
+                                    var columnHeaderIndex = 0;
+                                    var totalColumns = Model.InvoiceTable.First().Keys.Count;
+                                }
+                                <th class="sl-no">SL No</th>
+                                @foreach (var key in Model.InvoiceTable.First().Keys)
+                                {
+                                    var columnClass = key.ToLower() switch
+                                    {
+                                        "invoicenumber" => "col-invoice-number",
+                                        "invoicedate" => "col-invoice-date",
+                                        "suppliergstin" => "col-supplier-gstin",
+                                        "totaltax" => "col-total-tax",
+                                        _ => "col-default"
+                                    };
+                                    if (columnHeaderIndex == 0 || columnHeaderIndex == totalColumns - 1 || columnHeaderIndex == totalColumns - 2)
+                                    {
+                                        <th class="hide-col">@key</th>
+                                    }
+                                    else
+                                    {
+                                        <th class="@columnClass">@key</th>
+                                    }
+                                    columnHeaderIndex++;
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int slNo = 1;
+                            }
+                            @foreach (var row in Model.InvoiceTable)
+                            {
+                                <tr>
+                                    <td class="sl-no">@slNo</td>
+                                    @{
+                                        var columnIndex = 0;
+                                    }
+                                    @foreach (var value in row.Values)
+                                    {
+                                        var columnClass = Model.InvoiceTable.First().Keys.ElementAt(columnIndex).ToLower() switch
+                                        {
+                                            "invoicenumber" => "col-invoice-number",
+                                            "invoicedate" => "col-invoice-date",
+                                            "suppliergstin" => "col-supplier-gstin",
+                                            "totaltax" => "col-total-tax",
+                                            _ => "col-default"
+                                        };
+                                        if (columnIndex == 0 || columnIndex == row.Values.Count - 1 || columnIndex == row.Values.Count - 2)
+                                        {
+                                            <td class="hide-col">@value</td>
+                                        }
+                                        else if (columnIndex == 1)
+                                        {
+                                            <td class="read-only @columnClass" contenteditable="false">@value</td>
+                                        }
+                                        else
+                                        {
+                                            <td class="@columnClass" contenteditable="true">@value</td>
+                                        }
+                                        columnIndex++;
+                                    }
+                                </tr>
+                                slNo++;
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p>No valid data available for Invoice Table (requires at least 3 columns).</p>
+                }
+            </div>
+        </div>
+        <div class="table-wrappers">
+            <div class="table-header" style="display: flex; align-items: center; gap: 10px;">
+                <h4 style="margin: 0;">Portal Data</h4>
+                <p style="margin: 0; font-size: 0.9rem; color: #666;">(Total Rows: @Model.PortalTable?.Count())</p>
+            </div>
+            <div class="table-wrapper">
+                @if (Model.PortalTable != null && Model.PortalTable.Any() && Model.PortalTable.First().Keys.Count > 2)
+                {
+                    <table id="portalTable" class="display">
+                        <thead>
+                            <tr>
+                                @{
+                                    var columnHeaderIndex = 0;
+                                    var totalColumns = Model.PortalTable.First().Keys.Count;
+                                }
+                                <th class="sl-no">SL No</th>
+                                @foreach (var key in Model.PortalTable.First().Keys)
+                                {
+                                    var columnClass = key.ToLower() switch
+                                    {
+                                        "invoicenumber" => "col-invoice-number",
+                                        "invoicedate" => "col-invoice-date",
+                                        "suppliergstin" => "col-supplier-gstin",
+                                        "totaltax" => "col-total-tax",
+                                        _ => "col-default"
+                                    };
+                                    if (columnHeaderIndex == 0 || columnHeaderIndex == totalColumns - 1 || columnHeaderIndex == totalColumns - 2)
+                                    {
+                                        <th class="hide-col">@key</th>
+                                    }
+                                    else
+                                    {
+                                        <th class="@columnClass">@key</th>
+                                    }
+                                    columnHeaderIndex++;
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int slNo = 1;
+                            }
+                            @foreach (var row in Model.PortalTable)
+                            {
+                                <tr>
+                                    @{
+                                        var columnIndex = 0;
+                                    }
+                                    <td class="sl-no">@slNo</td>
+                                    @foreach (var value in row.Values)
+                                    {
+                                        if (columnIndex == 0 || columnIndex == row.Values.Count - 1 || columnIndex == row.Values.Count - 2)
+                                        {
+                                            <td class="hide-col">@value</td>
+                                        }
+                                        else if (columnIndex == 1)
+                                        {
+                                            <td class="read-only" contenteditable="false">@value</td>
+                                        }
+                                        else
+                                        {
+                                            <td>@value</td>
+                                        }
+                                        columnIndex++;
+                                    }
+                                </tr>
+                                slNo++;
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p>No valid data available for Portal Table (requires at least 3 columns).</p>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<div class="button-container">
+    <button class="btn-container" onclick="submitTables()">Compare</button>
+    <button class="btn-container" onclick="window.location.href='@Url.Action("CompareCSVResults", "Admin")?requestNo=@ViewBag.RequestNo&clientGSTIN=@ViewBag.ClientGSTIN'" style="text-align: center; display: inline-block;">Back</button>
+</div>
+
+<style>
+    #invoiceTable th.hide-col,
+    #invoiceTable td.hide-col,
+    #portalTable th.hide-col,
+    #portalTable td.hide-col {
+        display: none;
+    }
+
+    .invalid-cell {
+        background-color: #ffe6e6;
+        color: red;
+        font-weight: bold;
+    }
+</style>
+
+@section Scripts {
+    <script>
+                var $j = jQuery.noConflict(true);
+                $j(document).ready(function () {
+                    try {
+                        if (typeof $j.fn.DataTable === 'undefined') {
+                            return;
+                        }
+
+                        if ($j('#invoiceTable').length) {
+                            const invoiceTable = $j('#invoiceTable').DataTable({
+                                scrollY: '300px',
+                                scrollCollapse: true,
+                                paging: false,
+                                fixedHeader: true,
+                                dom: 't',
+                                columnDefs: [
+                                    { width: '50px', targets: '.sl-no' },
+                                    { width: '120px', targets: '.col-invoice-number' },
+                                    { width: '100px', targets: '.col-invoice-date' },
+                                    { width: '150px', targets: '.col-supplier-gstin' },
+                                    { width: '80px', targets: '.col-total-tax' },
+                                    { width: '100px', targets: '.col-default' },
+                                    { visible: false, targets: '.hide-col' }
+                                ],
+                                drawCallback: function() {
+                                    $j(this.api().table().container()).find('td[contenteditable="true"]').attr('contenteditable', true);
+                                }
+                            });
+                            invoiceTable.columns.adjust();
+                        }
+
+                        if ($j('#portalTable').length) {
+                            const portalTable = $j('#portalTable').DataTable({
+                                scrollY: '300px',
+                                scrollCollapse: true,
+                                paging: false,
+                                fixedHeader: true,
+                                dom: 't',
+                                columnDefs: [
+                                    { width: '50px', targets: '.sl-no' },
+                                    { width: '120px', targets: '.col-invoice-number' },
+                                    { width: '100px', targets: '.col-invoice-date' },
+                                    { width: '150px', targets: '.col-supplier-gstin' },
+                                    { width: '80px', targets: '.col-total-tax' },
+                                    { width: '100px', targets: '.col-default' },
+                                    { visible: false, targets: '.hide-col' }
+                                ],
+                                drawCallback: function() {
+                                    $j(this.api().table().container()).find('td[contenteditable="true"]').attr('contenteditable', true);
+                                }
+                            });
+                            portalTable.columns.adjust();
+                        }
+
+                        $j('.read-only').on('click keydown', function(e) {
+                            e.preventDefault();
+                            return false;
+                        });
+                    } catch (error) {
+                        console.error('DataTables initialization failed:', error.message, error.stack);
+                        alert('Failed to initialize tables: ' + error.message);
+                    }
+                });
+
+                function isValidDate(dateString) {
+                    return !isNaN(Date.parse(dateString));
+                }
+
+                function isNumeric(value) {
+                    return !isNaN(value) && value.trim() !== '';
+                }
+
+                function submitTables() {
+                    try {
+                        let invoiceData = [];
+                        let invoiceHeaders = [];
+                        $j('#invoiceTable thead tr th').each(function () {
+                            invoiceHeaders.push($j(this).text().trim());
+                        });
+
+                        let isValid = true;
+
+        atechment://index.html
+                        $j('#invoiceTable tbody tr').each(function (rowIndex) {
+                            let row = {};
+                            $j(this).find('td').each(function (colIndex) {
+                                if (colIndex < invoiceHeaders.length) {
+                                    let cellValue = $j(this).text().trim();
+                                    let header = invoiceHeaders[colIndex];
+                                    row[header] = cellValue;
+
+                                    $j(this).removeClass('invalid-cell');
+
+                                    if (header.toLowerCase().includes("invoicedate")) {
+                                        if (!/^\d{2}-\d{2}-\d{4}$/.test(cellValue)) {
+                                            $j(this).addClass('invalid-cell');
+                                            isValid = false;
+                                        }
+                                    }
+
+                                    if (header.toLowerCase().includes("suppliergstin")) {
+                                        let gstinRegex = /^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}Z[A-Z\d]{1}$/;
+                                        if (!gstinRegex.test(cellValue)) {
+                                            $j(this).addClass('invalid-cell');
+                                            isValid = false;
+                                        }
+                                    }
+
+                                    if (header.toLowerCase().includes("totaltax")) {
+                                        if (!/^\d+(\.\d{1,2})?$/.test(cellValue)) {
+                                            $j(this).addClass('invalid-cell');
+                                            isValid = false;
+                                        }
+                                    }
+                                }
+                            });
+                            invoiceData.push(row);
+                        });
+
+                        if (!isValid) {
+                            return;
+                        }
+
+                        let portalData = [];
+                        let portalHeaders = [];
+                        $j('#portalTable thead tr th').each(function () {
+                            portalHeaders.push($j(this).text().trim());
+                        });
+                        $j('#portalTable tbody tr').each(function () {
+                            let row = {};
+                            $j(this).find('td').each(function (index) {
+                                if (index < portalHeaders.length) {
+                                    row[portalHeaders[index]] = $j(this).text().trim();
+                                }
+                            });
+                            portalData.push(row);
+                        });
+
+                        let form = $j('<form>', {
+                            action: '@Url.Action("EditCompare", "Admin")',
+                            method: 'POST'
+                        }).append(
+                            $j('<input>', {
+                                type: 'hidden',
+                                name: 'InvoiceTable',
+                                value: JSON.stringify(invoiceData)
+                            }),
+                            $j('<input>', {
+                                type: 'hidden',
+                                name: 'PortalTable',
+                                value: JSON.stringify(portalData)
+                            }),
+                            $j('<input>', {
+                                type: 'hidden',
+                                name: 'RequestNo',
+                                value: '@ViewBag.RequestNo'
+                            }),
+                            $j('<input>', {
+                                type: 'hidden',
+                                name: 'ClientGSTIN',
+                                value: '@ViewBag.ClientGSTIN'
+                            })
+                        );
+
+                        $j('body').append(form);
+                        form.submit();
+                    } catch (error) {
+                        console.error('Error submitting tables:', error.message, error.stack);
+                    }
+                }
+    </script>
+}

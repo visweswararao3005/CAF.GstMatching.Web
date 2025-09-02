@@ -1,0 +1,110 @@
+﻿
+/* Reset default margins and padding for the body */
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.button-container {
+    /*  position: fixed;
+        bottom: 45px;
+        right: 70px; /* Align buttons to the right with some padding 
+        display: flex;
+        gap: 15px;
+        z-index: 999;
+        */
+    display: flex;
+    justify-content: right;
+    align-items: flex-end;
+}
+
+.action-button {
+    padding: 12px 25px;
+    font-size: 16px;
+    background-color: #007BFF;
+    border: none;
+    color: white;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: none;
+}
+
+.dashboard-body {
+    padding: 10px;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    width: 100%; /* Ensure full width */
+}
+
+.completed-tickets {
+    overflow-x: auto;
+    margin: 0; /* Remove any default margins */
+    padding: 0; /* Ensure no padding pushes it from the left */
+    width: 100%; /* Ensure full width */
+}
+
+.ticket-table {
+    width: 100%; /* Ensures table takes full width of its container */
+    height: calc(90vh - 200px); /* Sets table height to fill viewport minus space for buttons and padding */
+    border-collapse: collapse;
+    font-size: 13px;
+    overflow-y: auto; /* Adds vertical scrolling if needed */
+    margin: 0; /* Ensures no margin pushes it from the left */
+    padding: 0;
+    box-sizing: border-box; /* Ensures padding and borders don’t add to width */
+}
+
+    .ticket-table th, .ticket-table td {
+        border: 2px solid #ddd;
+        padding: 3px; /* Reduced padding for row height */
+        text-align: left;
+    }
+
+    .ticket-table th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+    }
+
+    .ticket-table td {
+        vertical-align: middle;
+    }
+
+        .ticket-table td:nth-child(n+4):nth-child(-n+10) {
+            text-align: right;
+        }
+
+    /* Highlight GrandTotal row */
+    .ticket-table tbody tr:last-child td {
+        background-color: #fff2cc;
+        font-weight: bold;
+    }
+
+    /* New header style */
+    .ticket-table .header-row {
+        background-color: #e0e0e0;
+        font-weight: bold;
+        text-align: center;
+        padding: 5px 0;
+    }
+
+/* Back button styling */
+.back-button {
+    text-align: right;
+}
+
+.btn-back {
+    padding: 8px 16px;
+    background-color: #6c757d;
+    color: white;
+    margin-top: 1px;
+}
+
+    .btn-back:hover {
+        background-color: #5a6268;
+    }
+
+@media (min-width: 1200px) {
+    .container, .container-lg, .container-md, .container-sm, .container-xl {
+        max-width: 1325px;
+    }
+}

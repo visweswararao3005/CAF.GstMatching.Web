@@ -1,0 +1,616 @@
+﻿@using CAF.GstMatching.Web.Common
+@{
+	var userName = Context.Session.GetString("Username") ?? "Guest"; // Retrieve username from session
+}
+@inject IConfiguration Configuration
+@{
+	var warningBeforeMs = Configuration.GetValue<int>("SessionSettings:WarningBeforeInMinutes") * 60 * 1000;
+	var warningSeconds = warningBeforeMs / 1000;
+}
+@{
+	var currentUserEmail = Context.Session.GetString("Email") ?? "";
+	//var mainAdminEmails = Configuration["MainAdminEmail"]?.Split(',') ?? new string[0];
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>GST Compare</title>
+	<link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" />
+	<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+	<link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+	<link rel="icon" type="image/png" href="~/favicon-techrise.png" />
+	@RenderSection("Styles", required: false)
+</head>
+<body data-logged-in="@(Context.Session.GetString("UserId") != null ? "true" : "false")">
+	<header class="bg-dark">
+		@if (ViewBag.Messages != "Vendor" && ViewBag.Messages != "Admin" && ViewBag.Messages != "RegisterPage" && ViewBag.Messages != "MainAdmin")
+		{
+			<!-- Default Header (e.g., Homepage) -->
+			<nav class="navbar navbar-expand-lg">
+				<div class="container-fluid">
+					<a class="navbar-brand" href="@Url.Action("Index", "Home")" style="margin-top : 0px !important">
+						<img src="~/content/images/GSTLOGO.png" height="60px" alt="GSTCompare Logo" />
+					</a>
+					<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+						<span class="navbar-toggler-icon"></span>
+					</button>
+					<div class="collapse navbar-collapse" id="mainNavbar">
+						<ul class="navbar-nav ms-auto">
+							<li class="nav-item">
+								<a class="nav-link btn btn-login" asp-controller="Home" asp-action="Login" style="margin-top : 0px !important">Login</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link btn btn-signup" asp-controller="Home" asp-action="Signup" style="margin-top : 0px !important">SignUp</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</nav>
+		}
+		else if (ViewBag.Messages == "Vendor")
+		{
+			<!-- vendors Header -->
+			<nav class="navbar navbar-expand-lg">
+				<div class="container-fluid">
+					<a class="navbar-brand" href="@Url.Action("DashboardView", "Vendor")">
+						<img src="~/content/images/GSTLOGO.png" height="60px" alt="GSTCompare Logo" />
+					</a>
+					<!-- Welcome Message -->
+					<span class="navbar-text welcome-message">
+						@(ViewBag.ResponseDict?.ContainsKey("txtWelcomeBack1") == true ? ViewBag.ResponseDict["txtWelcomeBack1"] : "Welcome back"), @MySession.Current.UserName!
+					</span>
+					<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#taskdetNavbar" aria-controls="taskdetNavbar" aria-expanded="false" aria-label="Toggle navigation">
+						<span class="navbar-toggler-icon"></span>
+					</button>
+					<div class="collapse navbar-collapse" id="taskdetNavbar">
+						<ul class="navbar-nav ms-auto align-items-center gap-2">
+							<li class="nav-item dropdown">
+								<button class="btn dropdown-toggle" type="button" id="accountDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+									<span class="hamburger">&#9776;</span> <!-- Hamburger icon (three lines) -->
+								</button>
+								<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("Index", "Payment")">Subscription</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ChangePasswordV", "Vendor")">Change Password</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("Logout", "Vendor")">Logout</a></li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</nav>
+
+			<!-- Sub-Header -->
+			<nav class="navbar-subheader">
+				<div class="container">
+					<div class="d-flex justify-content-center">
+						<ul class="navbar-nav">
+							@*	<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle @((ViewData["ActiveAction"]?.ToString() == "act1") ? "active" : "")" href="#" id="requestsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									Requests
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="requestsDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("OpenTickets", "Vendor")">Current Requests</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ClosedRequests", "Vendor")">Closed Requests</a></li>
+								</ul>
+							</li>  *@
+							@*	<li class="nav-item">
+								<a class="nav-link @((ViewData["ActiveAction"]?.ToString() == "act2") ? "active" : "")" href="@Url.Action("SalesLedger", "Vendor")">Sales Ledger</a>
+							</li>  *@
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle @((ViewData["ActiveAction"]?.ToString() == "act2") ? "active" : "")" href="#" id="salesLedgerDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									Sales Register
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="salesLedgerDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerUpload", "Vendor")">Upload File</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequests", "Vendor")">Current Requests</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerClosedRequests", "Vendor")">Closed Requests</a></li>
+								</ul>
+							</li>
+							@*	<li class="nav-item">
+								<a class="nav-link @((ViewData["ActiveAction"]?.ToString() == "act3") ? "active" : "")" href="@Url.Action("Upload", "Vendor")">Purchase Register</a>
+							</li>  *@
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle @((ViewData["ActiveAction"]?.ToString() == "act3") ? "active" : "")" href="#" id="purchaseRegisterDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									Purchase Register
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="purchaseRegisterDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("Upload", "Vendor")">Upload File</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("OpenTickets", "Vendor")">Current Requests</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ClosedRequests", "Vendor")">Closed Requests</a></li>
+								</ul>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link @((ViewData["ActiveAction"]?.ToString() == "act4") ? "active" : "")" href="@Url.Action("CNDN", "Vendor")">CN/DN</a>
+							</li>
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle @((ViewData["ActiveAction"]?.ToString() == "act5") ? "active" : "")" href="@Url.Action("Reconciliation", "Vendor")" id="reconcilliationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									Reconciliation
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="reconcilliationDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("GSTR1A", "Vendor")">GSTR1A</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("GSTR2A", "Vendor")">GSTR2A</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("GSTR2B", "Vendor")">GSTR2B</a></li>
+								</ul>
+							</li>
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle @((ViewData["ActiveAction"]?.ToString() == "act6") ? "active" : "")" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									Reports
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="reportsDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("ReportGSTR1A", "Vendor")">GSTR1A</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ReportGSTR1A", "Vendor")">GSTR2A</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ReportGSTR1A", "Vendor")">GSTR2B</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ExceptionReports", "Vendor")">ExceptionReports</a></li>
+								</ul>
+							</li>
+							@*	<li class="nav-item">
+								<a class="nav-link @((ViewData["ActiveAction"]?.ToString() == "act7") ? "active" : "")" href="@Url.Action("Notice", "Vendor")">Notices Tracker</a>
+							</li>  *@
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle @((ViewData["ActiveAction"]?.ToString() == "act7") ? "active" : "")" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									Notices Tracker
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="reportsDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("UploadNotice", "Vendor")">Upload Notice</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ActiveNotices", "Vendor")">Active Notices</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ClosedNotices", "Vendor")">ClosedNotices</a></li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</nav>
+		}
+
+		else if (ViewBag.Messages == "Admin")
+		{
+			<!-- Admins Header -->
+			<nav class="navbar navbar-expand-lg">
+				<div class="container-fluid">
+					<a class="navbar-brand" href="@Url.Action("OpenTaskCSV", "Admin")">
+						<img src="~/content/images/GSTLOGO.png" height="60px" alt="GSTCompare Logo" />
+
+					</a>
+					<!-- Welcome Message -->
+					<span class="navbar-text welcome-message">
+						@(ViewBag.ResponseDict?.ContainsKey("txtWelcomeBack") == true ? ViewBag.ResponseDict["txtWelcomeBack"] : "Welcome back"), @MySession.Current.UserName!
+					</span>
+					<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#taskdetNavbar" aria-controls="taskdetNavbar" aria-expanded="false" aria-label="Toggle navigation">
+						<span class="navbar-toggler-icon"></span>
+					</button>
+					<div class="collapse navbar-collapse" id="taskdetNavbar">
+						<ul class="navbar-nav ms-auto align-items-center gap-2">
+							<li class="nav-item dropdown">
+								<button class="btn dropdown-toggle" type="button" id="accountDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+									<span class="hamburger">☰</span> <!-- Hamburger icon (three lines) -->
+								</button>
+								<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("Index", "Payment")">Subscription</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ChangePassword", "Admin")">Change Password</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("Logout", "Admin")">Logout</a></li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</nav>
+
+			<!-- Sub-Header -->
+			<nav class="navbar-subheader">
+				<div class="container">
+					<div class="d-flex justify-content-center">
+						<ul class="navbar-nav">
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle text-light @((ViewData["ActiveAction"]?.ToString() == "act2") ? "active" : "")" href="#" id="purchaseRegisterActionListDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									Purchase Register - Action List
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="purchaseRegisterActionListDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("Upload", "Admin")">Purchase Register - Upload File</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("OpenRequestsCSV", "Admin")">Purchase Register - Compare - CSV</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("OpenTaskAPI_Master", "Admin")">Purchase Register - Compare - API - Master</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("OpenTaskAPI_Iris", "Admin")">Purchase Register - Compare - API - Iris</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ClosedRequests", "Admin")">Purchase Register - Closed Requests</a></li>
+									@*<li><a class="dropdown-item" href="@Url.Action("DownloadFromGSTIN", "Admin")">Download from GSTIN</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("UploadToDb", "Admin")">Upload to DB</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("Payments", "Admin")">Payments</a></li>*@
+								</ul>
+							</li>
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle text-light @((ViewData["ActiveAction"]?.ToString() == "act6") ? "active" : "")" href="#" id="salesLedgerActionListDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									Sales Register - Action List
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="salesLedgerActionListDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerUpload", "Admin")">Sales Register - Upload File</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequestsCSV", "Admin")">Sales Register - Compare - CSV</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequestsAPI_Master", "Admin")">Sales Register - Compare - API - Master</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequestsAPI_Iris", "Admin")">Sales Register - Compare - API - Iris</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerClosedRequests", "Admin")">Sales Register - Closed Requests</a></li>
+									@*	<li><a class="dropdown-item" href="@Url.Action("DownloadFromGSTIN", "Admin")">Download from GSTIN</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("UploadToDb", "Admin")">Upload to DB</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("Payments", "Admin")">Payments</a></li>  *@
+								</ul>
+							</li>
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle text-light @((ViewData["ActiveAction"]?.ToString() == "act5") ? "active" : "")" href="#" id="noticesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									Notices Tracker
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="noticesDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("UploadNotice", "Admin")">Upload Notice</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ActiveNotices", "Admin")">Active Notices</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ClosedNotices", "Admin")">Closed Notices</a></li>
+								</ul>
+							</li>
+						@* 	<li class="nav-item">
+								<a class="nav-link text-light @((ViewData["ActiveAction"]?.ToString() == "act1") ? "active" : "")" href="@Url.Action("ClientMaster", "Admin")">Client Master</a>
+							</li>	 *@												
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle text-light @((ViewData["ActiveAction"]?.ToString() == "act3") ? "active" : "")" href="#" id="reconcilliationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									Reconciliation
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="reconcilliationDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("GSTR1A", "Admin")">GSTR1A</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("GSTR2A", "Admin")">GSTR2A</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("GSTR2B", "Admin")">GSTR2B</a></li>
+								</ul>
+							</li>
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle text-light @((ViewData["ActiveAction"]?.ToString() == "act4") ? "active" : "")" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									Reports
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="reportsDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("ClientStatusReport", "Admin")">Client Status Report</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ClientWiseMismatchReport", "Admin")">Client Wise Mismatch Report</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ClientPayments", "Admin")">Client Payments</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("GSTFilingReport", "Admin")">GST Filing Report</a></li>
+								</ul>
+							</li>														
+							@* @if (mainAdminEmails.Contains(currentUserEmail, StringComparer.OrdinalIgnoreCase))
+							{
+								<li class="nav-item">
+									<a class="nav-link text-light @((ViewData["ActiveAction"]?.ToString() == "act7") ? "active" : "")" href="@Url.Action("MapGstin", "Admin")">Map GSTIN</a>
+								</li>
+								<li class="nav-item">
+									<a class="nav-link text-light @((ViewData["ActiveAction"]?.ToString() == "act8") ? "active" : "")" href="@Url.Action("ManageUserAccess", "Admin")">Manage User Access</a>
+								</li>
+							} *@
+						</ul>
+					</div>
+				</div>
+			</nav>
+		}
+
+		else if (ViewBag.Messages == "MainAdmin")
+		{
+			<!-- Admins Header -->
+			<nav class="navbar navbar-expand-lg">
+				<div class="container-fluid">
+					<a class="navbar-brand" href="@Url.Action("OpenTaskCSV", "MainAdmin")">
+						<img src="~/content/images/GSTLOGO.png" height="60px" alt="GSTCompare Logo" />
+
+					</a>
+					<!-- Welcome Message -->
+					<span class="navbar-text welcome-message">
+						@(ViewBag.ResponseDict?.ContainsKey("txtWelcomeBack") == true ? ViewBag.ResponseDict["txtWelcomeBack"] : "Welcome back"), @MySession.Current.UserName!
+					</span>
+					<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#taskdetNavbar" aria-controls="taskdetNavbar" aria-expanded="false" aria-label="Toggle navigation">
+						<span class="navbar-toggler-icon"></span>
+					</button>
+					<div class="collapse navbar-collapse" id="taskdetNavbar">
+						<ul class="navbar-nav ms-auto align-items-center gap-2">
+							<li class="nav-item dropdown">
+								<button class="btn dropdown-toggle" type="button" id="accountDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+									<span class="hamburger">☰</span> <!-- Hamburger icon (three lines) -->
+								</button>
+								<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("ChangePassword", "MainAdmin")">Change Password</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("Logout", "MainAdmin")">Logout</a></li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</nav>
+
+			<!-- Sub-Header -->
+			<nav class="navbar-subheader">
+				<div class="container">
+					<div class="d-flex justify-content-center">
+						<ul class="navbar-nav">
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle text-light @((ViewData["ActiveAction"]?.ToString() == "act2") ? "active" : "")" href="#" id="purchaseRegisterActionListDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									Purchase Register - Action List
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="purchaseRegisterActionListDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("Upload", "MainAdmin")">Purchase Register - Upload File</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("OpenRequestsCSV", "MainAdmin")">Purchase Register - Compare - CSV</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("OpenTaskAPI_Master", "MainAdmin")">Purchase Register - Compare - API - Master</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("OpenTaskAPI_Iris", "MainAdmin")">Purchase Register - Compare - API - Iris</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ClosedRequests", "MainAdmin")">Purchase Register - Closed Requests</a></li>
+									@*<li><a class="dropdown-item" href="@Url.Action("DownloadFromGSTIN", "Admin")">Download from GSTIN</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("UploadToDb", "Admin")">Upload to DB</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("Payments", "Admin")">Payments</a></li>*@
+								</ul>
+							</li>
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle text-light @((ViewData["ActiveAction"]?.ToString() == "act6") ? "active" : "")" href="#" id="salesLedgerActionListDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									Sales Register - Action List
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="salesLedgerActionListDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerUpload", "MainAdmin")">Sales Register - Upload File</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequestsCSV", "MainAdmin")">Sales Register - Compare - CSV</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequestsAPI_Master", "MainAdmin")">Sales Register - Compare - API - Master</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequestsAPI_Iris", "MainAdmin")">Sales Register - Compare - API - Iris</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerClosedRequests", "MainAdmin")">Sales Register - Closed Requests</a></li>
+									@*	<li><a class="dropdown-item" href="@Url.Action("DownloadFromGSTIN", "Admin")">Download from GSTIN</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("UploadToDb", "Admin")">Upload to DB</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("Payments", "Admin")">Payments</a></li>  *@
+								</ul>
+							</li>
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle text-light @((ViewData["ActiveAction"]?.ToString() == "act5") ? "active" : "")" href="#" id="noticesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									Notices Tracker
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="noticesDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("UploadNotice", "MainAdmin")">Upload Notice</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ActiveNotices", "MainAdmin")">Active Notices</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ClosedNotices", "MainAdmin")">Closed Notices</a></li>
+								</ul>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-light @((ViewData["ActiveAction"]?.ToString() == "act1") ? "active" : "")" href="@Url.Action("ClientMaster", "MainAdmin")">Client Master</a>
+							</li>
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle text-light @((ViewData["ActiveAction"]?.ToString() == "act3") ? "active" : "")" href="#" id="reconcilliationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									Reconciliation
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="reconcilliationDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("GSTR1A", "MainAdmin")">GSTR1A</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("GSTR2A", "MainAdmin")">GSTR2A</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("GSTR2B", "MainAdmin")">GSTR2B</a></li>
+								</ul>
+							</li>
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle text-light @((ViewData["ActiveAction"]?.ToString() == "act4") ? "active" : "")" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									Reports
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="reportsDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("ClientStatusReport", "MainAdmin")">Client Status Report</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ClientWiseMismatchReport", "MainAdmin")">Client Wise Mismatch Report</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ClientPayments", "MainAdmin")">Client Payments</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("GSTFilingReport", "MainAdmin")">GST Filing Report</a></li>
+								</ul>
+							</li>
+							@* 
+								<li class="nav-item">
+									<a class="nav-link text-light @((ViewData["ActiveAction"]?.ToString() == "act7") ? "active" : "")" href="@Url.Action("MapGstin", "MainAdmin")">Map GSTIN</a>
+								</li>
+								<li class="nav-item">
+									<a class="nav-link text-light @((ViewData["ActiveAction"]?.ToString() == "act8") ? "active" : "")" href="@Url.Action("ManageUserAccess", "MainAdmin")">Manage User Access</a>
+								</li> *@
+							
+						</ul>
+					</div>
+				</div>
+			</nav>
+		}
+
+		else
+		{
+			<!-- Register Page Header -->
+			<nav class="navbar navbar-expand-lg">
+				<div class="container-fluid">
+					<a class="navbar-brand" href="@Url.Action("Index", "Home")" style="margin-top : 0px !important">
+						<img src="~/content/images/GSTLOGO.png" height="60px" alt="GSTCompare Logo" />
+
+					</a>
+					<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#RegisterNavbar" aria-controls="RegisterNavbar" aria-expanded="false" aria-label="Toggle navigation">
+						<span class="navbar-toggler-icon"></span>
+					</button>
+					<div class="collapse navbar-collapse" id="RegisterNavbar">
+						<ul class="navbar-nav ms-auto">
+							<li class="nav-item">
+								<a class="nav-link btn btn-login" asp-controller="Home" asp-action="Login" style="margin-top : 0px !important">
+									Already have an account? Sign in
+								</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</nav>
+		}
+	</header>
+
+	<div class="@(ViewData["Title"] == "Home Page" ? "main-content-full" : "container main-content")">
+		<main role="main">
+			@RenderBody()
+		</main>
+	</div>
+
+	<div id="sessionModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+		<div style="position:relative; margin:10% auto; padding:20px; background:white; width:500px; text-align:center;">
+			<h3 id="modalTitle">Session Expiring</h3>
+			<p id="modalMessage">Your session is about to expire in <span id="countdown">@warningSeconds</span> seconds.</p>
+			<button onclick="handleSessionEnd()" class="btn btn-primary" id="sessionOkBtn">OK</button>
+		</div>
+	</div>
+
+
+
+	<footer class="border-top footer text-center">
+		<div class="container">
+			<p>© @DateTime.Now.Year TECHRISE.com - All Rights Reserved.</p>
+		</div>
+	</footer>
+
+	<script>
+
+		const sessionTimeout = @((Configuration.GetValue<int>("SessionSettings:SessionTimeoutInMinutes")) * 60 * 1000);
+		const warningBefore = @((Configuration.GetValue<int>("SessionSettings:WarningBeforeInMinutes")) * 60 * 1000);
+				
+		//let sessionTimeout = 30 * 60 * 1000; // 30 minutes
+		//let warningBefore = 1 * 60 * 1000; // Show popup 1 minute before
+
+		// let sessionTimeout = 20 * 1000;      // Total session time (20 sec for demo)
+		// let warningBefore = 10 * 1000;        // Show modal 10 seconds before timeout
+
+		let warningTimer, logoutTimer, countdownTimer;
+		let countdown = warningBefore / 1000 ;
+
+		function startSessionTimers() {
+			clearTimeout(warningTimer);
+			clearTimeout(logoutTimer);
+			clearInterval(countdownTimer);
+
+			warningTimer = setTimeout(showSessionWarning, sessionTimeout - warningBefore);
+			logoutTimer = setTimeout(showSessionExpired, sessionTimeout);
+		}
+
+		function showSessionWarning() {
+			//countdown = warningBefore / 1000; // Reset countdown here
+			const modal = document.getElementById('sessionModal');
+			modal.style.display = 'block';
+
+			document.getElementById('modalTitle').innerText = 'Session Expiring';
+			document.getElementById('modalMessage').innerHTML = 'Your session is about to expire in <span id="countdown">' + countdown + '</span> seconds.';
+			document.getElementById('sessionOkBtn').innerText = 'OK';
+
+			countdownTimer = setInterval(() => {
+				countdown--;
+				if (countdown <= 0) {
+					clearInterval(countdownTimer);
+				} else {
+					document.getElementById('countdown').innerText = countdown;
+				}
+			}, 1000);
+		}
+
+		function showSessionExpired() {
+			clearInterval(countdownTimer);
+			const modal = document.getElementById('sessionModal');
+			modal.style.display = 'block';
+
+			document.getElementById('modalTitle').innerText = 'Session Expired';
+			document.getElementById('modalMessage').innerText = 'Your session has expired. Please login again.';
+			document.getElementById('sessionOkBtn').innerText = 'OK';
+		}
+
+		function handleSessionEnd() {
+			// Always redirect to login when OK is clicked
+			window.location.href = '@Url.Action("Login", "Home")';
+		}
+
+		window.onload = () => {
+			initializeSession();
+		};
+
+		function initializeSession() {
+			const isLoggedIn = document.body.dataset.loggedIn === 'true';
+			if (isLoggedIn) {
+				startSessionTimers();
+			}
+		}
+	</script>
+
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			// Get base path from server, normalize it
+			const basePath = ('@Context.Request.PathBase').toLowerCase().replace(/\/+$/, '');
+			// Define public paths dynamically
+			const publicPaths = [
+				`${basePath}`,
+				`${basePath}/home/index`,
+				`${basePath}/home/login`,
+				`${basePath}/home/signup`,
+				`${basePath}/home/checksession`
+			].map(path => path.toLowerCase().replace(/\/+$/, ''));
+			const currentPath = window.location.pathname.toLowerCase().replace(/\/+$/, '');
+			//console.log('DOMContentLoaded: Current path:', currentPath, 'Base path:', basePath, 'Public paths:', publicPaths);
+
+			// Skip validation for public pages
+			if (publicPaths.includes(currentPath)) {
+				//console.log('Skipping session check for public page:', currentPath);
+				return;
+			}
+
+			// Check session validity for protected pages
+			fetch(`${basePath}/Home/CheckSession`, {
+				method: 'GET',
+				credentials: 'include',
+				cache: 'no-store'
+			})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Session check failed');
+				}
+				return response.json();
+			})
+			.then(data => {
+				if (!data.isAuthenticated) {
+					//console.log('Session invalid, redirecting to:', `${basePath}/Home/Login`);
+					window.location.href = `${basePath}/Home/Login`;
+				} else {
+					//console.log('Session valid for:', currentPath);
+				}
+			})
+			.catch(error => {
+				//console.error('Session check failed:', error);
+				window.location.href = `${basePath}/Home/Login`;
+			});
+		});
+
+		window.addEventListener('pageshow', function (event) {
+			if (event.persisted) { // Page loaded from cache (e.g., back button)
+				const basePath = ('@Context.Request.PathBase').toLowerCase().replace(/\/+$/, '');
+				const publicPaths = [
+					`${basePath}`,
+					`${basePath}/home/index`,
+					`${basePath}/home/login`,
+					`${basePath}/home/signup`,
+					`${basePath}/home/checksession`
+				].map(path => path.toLowerCase().replace(/\/+$/, ''));
+				const currentPath = window.location.pathname.toLowerCase().replace(/\/+$/, '');
+				//console.log('Pageshow: Current path:', currentPath, 'Base path:', basePath, 'Public paths:', publicPaths);
+
+				// Skip validation for public pages
+				if (publicPaths.includes(currentPath)) {
+					//console.log('Skipping session check for cached public page:', currentPath);
+					return;
+				}
+
+				fetch(`${basePath}/Home/CheckSession`, {
+					method: 'GET',
+					credentials: 'include',
+					cache: 'no-store'
+				})
+				.then(response => {
+					if (!response.ok) {
+						throw new Error('Session check failed');
+					}
+					return response.json();
+				})
+				.then(data => {
+					if (!data.isAuthenticated) {
+						//console.log('Session invalid, redirecting to:', `${basePath}/Home/Login`);
+						window.location.href = `${basePath}/Home/Login`;
+					} else {
+						//console.log('Session valid for cached page:', currentPath);
+					}
+				})
+				.catch(error => {
+					//console.error('Session check failed:', error);
+					window.location.href = `${basePath}/Home/Login`;
+				});
+			}
+		});
+	</script>
+
+	<script src="~/lib/jquery/dist/jquery.min.js"></script>
+	<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="~/js/site.js" asp-append-version="true"></script>
+	<script src="~/js/Home.js"></script>
+	@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

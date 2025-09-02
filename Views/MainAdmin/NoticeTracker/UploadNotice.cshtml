@@ -1,0 +1,391 @@
+﻿@{
+    ViewData["Title"] = "Upload Notice";
+}
+@{
+    var responseDict = ViewBag.ResponseDict as Dictionary<string, string> ?? new Dictionary<string, string>();
+    var requestNo = ViewBag.requestNo ?? null;
+}
+<link rel="stylesheet" href="~/css/UploadNotice.css" />
+
+<div class="container">
+    @if(ViewBag.FileEdit != null)
+    {
+        <h2 class="text-primary">Edit Upload Notice</h2>
+    }
+    else
+    {
+        <h2 class="text-primary">Upload Notice</h2>
+    }
+    <div class="content">
+
+        <form asp-action="UploadNoticeFile" asp-controller="Admin" id="noticeForm" enctype="multipart/form-data" method="post">
+            <input type="hidden" id="requestNo" name="requestNo" value="@requestNo" />
+            <div class="form-group row">
+                <div class="col-md-6">
+                    <label for="noticeTitle" class="form-label required">Notice Title</label>
+                    <input type="text" class="form-control" id="noticeTitle" name="noticeTitle" placeholder="Notice Title..." required value="@(ViewBag.noticeDetails?.NoticeTitle ?? "")" />
+                    <div class="char-count" id="charCountForTitle">0/100 characters</div>
+                    <div class="char-error" id="charErrorForTitle">Title cannot exceed 100 characters.</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="noticeDate" class="form-label required">Notice Date</label>
+                    <input type="date" class="form-control" id="noticeDate" name="noticeDate" max="@DateTime.Today.ToString("yyyy-MM-dd")" required value="@(ViewBag.noticeDetails?.NoticeDatetime != null ? ((DateTime)ViewBag.noticeDetails.NoticeDatetime).ToString("yyyy-MM-dd") : "")" onclick="this.showPicker()">
+                </div>
+            </div>
+            <div class="form-group row">
+             @*   <div class="col-md-6">
+                    <label for="sourceType" class="form-label required">Source Type</label>
+                    <select class="form-select" id="sourceType" name="sourceType" required>
+                        <option value="">Select source</option>
+                        <option value="Manual">Manual</option>
+                        <option value="Email">Email</option>
+                    </select>
+                </div> *@
+
+                <div class="col-md-6">
+                    <label for="priority" class="form-label required">Priority</label>
+                    <select class="form-select" id="priority" name="priority" required>
+                        <option value="">Select priority</option>
+                        <option value="High" selected="@(ViewBag.noticeDetails?.Priority == "High")">High</option>
+                        <option value="Medium" selected="@(ViewBag.noticeDetails?.Priority == "Medium")">Medium</option>
+                        <option value="Low" selected="@(ViewBag.noticeDetails?.Priority == "Low")">Low</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="description" class="form-label required">Notice Description</label>
+                <textarea class="form-control" id="description" name="description" rows="2" placeholder="Notice Description(Max 1000 characters)..." required >@(ViewBag.noticeDetails?.NoticeDescription ?? "")</textarea>
+                <div class="char-count" id="charCount">0/1000 characters</div>
+                <div class="char-error" id="charError">Description cannot exceed 1000 characters.</div>
+            </div>
+
+            <div class="form-group">
+                <div class="d-flex align-items-center justify-content-between">
+                    <label for="fileNameDisplay" class="form-label required mb-0">Upload Notice Document (PDF)(Max size 20MB)</label>
+
+                    @if (!string.IsNullOrEmpty(ViewBag.noticeDetails?.FileName) && (ViewBag.FileEdit ?? false))
+                    {
+                        <div class="d-flex align-items-center ms-3">
+                            <span class="text-success me-2">@ViewBag.noticeDetails.FileName</span>
+
+                            <a href="@Url.Action("DeletePdfFile", "Vendor", new { requestNumber = ViewBag.noticeDetails.RequestNumber, ClientGstin = ViewBag.noticeDetails.ClientGstin })"
+                               class="btn btn-sm btn-danger">
+                                Delete
+                            </a>
+                        </div>
+                    }
+                </div>
+
+                <div class="custom-file-upload mt-2">
+                    <input type="text" id="fileNameDisplay" readonly placeholder="No file selected" value="@(ViewBag.noticeDetails?.FileName ?? "")" />
+                    <button type="button" onclick="handleBrowseClick()">Browse</button>
+                    <input type="file" class="file-upload" id="uploadedFile" name="uploadedFile" accept=".pdf" />
+                </div>
+                <div id="fileError" class="text-danger" style="display: none;"></div>
+                <input type="hidden" id="hasExistingFile" value="@(string.IsNullOrEmpty(ViewBag.noticeDetails?.FileName) ? "false" : "true")" />
+            </div>
+
+            <div id="errorMsg" class="text-danger mb-1"></div>
+
+            <button type="submit" class="btn btn-primary">Upload</button>
+        </form>
+
+        <!-- Back Button 
+        <div class="back-button">
+            <button class="btn-back" onclick="clearFormValuesAndRedirect()">
+                @(responseDict.ContainsKey("btnBackToDashboard") ? responseDict["btnBackToDashboard"] : "Back to Dashboard")
+            </button>
+        </div>-->
+
+        <!-- Success Message -->
+        @if (ViewBag.Message != null && ViewBag.ErrorMessage == null && ViewBag.Edit == "No")
+        {
+            <div id="successModal" class="modal">
+                <div class="modal-content" id="modalContent">
+                    ✅ Request Generated: <strong>@ViewBag.Message</strong>
+                    <br>Track your Notices using this request number.
+                    <button class="modal-button" onclick="closeModal()">OK</button>
+                </div>
+            </div>
+        }
+        @if (ViewBag.ErrorMessage == null && ViewBag.Edit == "Yes")
+        {
+            <div id="successModal" class="modal">
+                <div class="modal-content" id="modalContent">
+                    ✅ Request Updated: <strong>@ViewBag.Message</strong>
+                    <br>Track your Notices using this request number.
+                    <button class="modal-button" onclick="closeModal()">OK</button>
+                </div>
+            </div>
+        }
+        @if (ViewBag.ErrorMessage != null)
+        {
+            <div class="alert alert-danger mt-1 error-message-scroll">
+                @Html.Raw(((string)ViewBag.ErrorMessage).Replace("\n", "<br/>"))
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    // Function to save form values to sessionStorage
+    function saveFormValues() {
+        const formData = {
+            noticeTitle: document.getElementById("noticeTitle").value,
+            noticeDate: document.getElementById("noticeDate").value,
+           // sourceType: document.getElementById("sourceType").value,
+            priority: document.getElementById("priority").value,
+            description: document.getElementById("description").value,
+            fileName: document.getElementById("fileNameDisplay").value
+        };
+        sessionStorage.setItem("noticeFormValues", JSON.stringify(formData));
+    }
+
+    // Function to update file name display
+    function updateFileNameDisplay(fileName) {
+        const fileNameDisplay = document.getElementById("fileNameDisplay");
+        fileNameDisplay.value = fileName || "No file selected";
+    }
+
+    // Function to load form values from sessionStorage
+    function loadFormValues() {
+        const savedValues = sessionStorage.getItem("noticeFormValues");
+        if (savedValues) {
+            const formData = JSON.parse(savedValues);
+            document.getElementById("noticeTitle").value = formData.noticeTitle || "";
+            document.getElementById("noticeDate").value = formData.noticeDate || "";
+        //    document.getElementById("sourceType").value = formData.sourceType || "";
+            document.getElementById("priority").value = formData.priority || "";
+            document.getElementById("description").value = formData.description || "";
+            updateFileNameDisplay(formData.fileName || "");
+        }
+    }
+    function updateCharCount() {
+        const description = document.getElementById("description").value;
+        const charCount = document.getElementById("charCount");
+        const charError = document.getElementById("charError");
+        charCount.textContent = `${description.length}/1000 characters`;
+        if (description.length > 1000) {
+            charError.style.display = "block";
+            charCount.style.color = "red";
+        } else {
+            charError.style.display = "none";
+            charCount.style.color = "#6c757d";
+        }
+    }
+    function updateCharCountForTitle() {
+        const title = document.getElementById("noticeTitle").value;
+        const charCountForTitle = document.getElementById("charCountForTitle");
+        const charErrorForTitle = document.getElementById("charErrorForTitle");
+        charCountForTitle.textContent = `${title.length}/100 characters`;
+        if (title.length > 100) {
+            charErrorForTitle.style.display = "block";
+            charCountForTitle.style.color = "red";
+        } else {
+            charErrorForTitle.style.display = "none";
+            charCountForTitle.style.color = "#6c757d";
+        }
+    }
+    // Form submission handler with validation
+    document.getElementById("noticeForm").addEventListener("submit", function (e) {
+        let errorMsg = "";
+        const noticeTitle = document.getElementById("noticeTitle").value.trim();
+        const noticeDate = document.getElementById("noticeDate").value;
+     //   const sourceType = document.getElementById("sourceType").value;
+        const priority = document.getElementById("priority").value;
+        const description = document.getElementById("description").value.trim();
+        const fileInput = document.getElementById("uploadedFile");
+        const fileError = document.getElementById("fileError");
+
+        if (!noticeTitle) errorMsg += "Notice Title is required.<br>";
+        if (!noticeDate) errorMsg += "Notice Date is required.<br>";
+     //   if (!sourceType) errorMsg += "Please select a Source Type.<br>";
+        if (!priority) errorMsg += "Please select Priority.<br>";
+        //if (!description) errorMsg += "Description cannot be empty.<br>";
+        if (description.length > 1000) errorMsg += "Description cannot exceed 1000 characters.<br>";
+        if (fileInput.files.length === 0) {
+            errorMsg += "Please upload a document.<br>";
+            fileError.style.display = "block";
+        } else if (fileInput.files[0].size > 20 * 1024 * 1024) {
+            errorMsg += "File size exceeds 20MB limit.<br>";
+            fileError.textContent = "File size exceeds 20MB limit.";
+            fileError.style.display = "block";
+        } else {
+            fileError.style.display = "none";
+        }
+
+        if (errorMsg) {
+            document.getElementById("errorMsg").innerHTML = errorMsg;
+            e.preventDefault();
+            saveFormValues(); // Save values on error
+        } else {
+            saveFormValues(); // Save values before submission
+        }
+    });
+
+    function handleBrowseClick() {
+        const hasExistingFile = document.getElementById("hasExistingFile").value === "true";
+        const fileError = document.getElementById("fileError");
+
+        if (hasExistingFile) {
+            fileError.textContent = "A file has already been uploaded. Please delete the existing file before uploading a new one.";
+            fileError.style.display = "block";
+        } else {
+            document.getElementById("uploadedFile").click();
+        }
+    }
+
+    // DOMContentLoaded event to initialize form
+    document.addEventListener("DOMContentLoaded", function () {
+        // Check for error message or success modal
+        const hasError = @Json.Serialize(ViewBag.ErrorMessage != null);
+        const hasSuccess = document.querySelector(".modal-content");
+
+        if (hasError || hasSuccess) {
+            loadFormValues(); // Load saved values if error or success modal
+        } else {
+            // Clear sessionStorage on fresh page load
+            sessionStorage.removeItem("noticeFormValues");
+            const initialValue = document.getElementById("fileNameDisplay").value;
+            if (!initialValue) {
+                updateFileNameDisplay(""); // Only clear if not already filled by Razor
+            }
+        }
+
+        // Update file name display when a file is selected
+        document.getElementById("uploadedFile").addEventListener("change", function () {                       
+            const file = this.files[0];
+            const maxSize = 20 * 1024 * 1024; // 20MB in bytes
+            const fileError = document.getElementById("fileError");
+            const fileName = file?.name || "";
+            updateFileNameDisplay(fileName);
+            if (file && file.size > maxSize) {
+                fileError.textContent = "File size exceeds 20MB limit.";
+                fileError.style.display = "block";
+            } else {
+                fileError.textContent = "A document is required. Please upload a PDF file before submitting.";
+                fileError.style.display = "none";
+            }
+            saveFormValues();
+        });
+
+        // Trigger file input click when text input is clicked
+        document.getElementById("fileNameDisplay").addEventListener("click", function (e) {            
+            const hasExistingFile = document.getElementById("hasExistingFile").value === "true";
+            if (hasExistingFile) {
+                e.preventDefault(); // stop the file from being processed
+                //this.value = ""; // reset the file input
+                //updateFileNameDisplay(""); // clear display if needed
+
+                // show custom error
+                const fileError = document.getElementById("fileError");
+                fileError.textContent = "A file has already been uploaded. Please delete the existing file before uploading a new one.";
+                fileError.style.display = "block";
+                return;
+            }
+            document.getElementById("uploadedFile").click();
+        });
+
+        // Save values on input changes
+        document.getElementById("noticeTitle").addEventListener("input", function () {
+            saveFormValues();
+            updateCharCountForTitle();
+        });
+        document.getElementById("noticeDate").addEventListener("change", saveFormValues);
+     //   document.getElementById("sourceType").addEventListener("change", saveFormValues);
+        document.getElementById("priority").addEventListener("change", saveFormValues);
+        document.getElementById("description").addEventListener("input", function () {
+            saveFormValues();
+            updateCharCount();
+        });
+
+        // Show modal if it exists
+        var modal = document.getElementById("successModal");
+        if (modal) {
+            modal.style.display = "flex";
+        }
+    });
+
+    // Clear sessionStorage and redirect to dashboard
+    // function clearFormValuesAndRedirect() {
+    //     sessionStorage.removeItem("noticeFormValues");
+    //     updateFileNameDisplay(""); // Clear file name display
+    //     window.location.href = '@Url.Action("DashboardView", "Vendor")';
+    // }
+
+    // Close modal and clear form
+    function closeModal() {
+        try {
+            var modal = document.getElementById("successModal");
+            if (modal) {
+                modal.style.display = "none";
+                console.log("Modal closed");
+            }
+            // Clear all form inputs client-side
+            var form = document.getElementById("noticeForm");
+            if (form) {
+                form.reset();
+                updateFileNameDisplay(""); // Clear file name display
+            }
+            // Clear sessionStorage after successful submission
+            sessionStorage.removeItem("noticeFormValues");
+            // Redirect to ActiveNotices
+            window.location.href = '@Url.Action("ActiveNotices", "Admin")';
+        } catch (error) {
+            console.error("Error in closeModal:", error);
+        }
+    }
+
+    // Draggable modal functionality (unchanged)
+    (function () {
+        var modalContent = document.getElementById("modalContent");
+        if (modalContent) {
+            var isDragging = false;
+            var currentX;
+            var currentY;
+            var initialX;
+            var initialY;
+            var xOffset = 0;
+            var yOffset = 0;
+
+            modalContent.addEventListener("mousedown", startDragging);
+
+            function startDragging(e) {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+
+                if (e.target === modalContent || e.target.tagName === "P") {
+                    isDragging = true;
+                }
+
+                document.addEventListener("mousemove", drag);
+                document.addEventListener("mouseup", stopDragging);
+            }
+
+            function drag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+
+                    xOffset = currentX;
+                    yOffset = currentY;
+
+                    setTranslate(currentX, currentY, modalContent);
+                }
+            }
+
+            function setTranslate(xPos, yPos, el) {
+                el.style.transform = `translate(${xPos}px, ${yPos}px)`;
+            }
+
+            function stopDragging() {
+                isDragging = false;
+                document.removeEventListener("mousemove", drag);
+                document.removeEventListener("mouseup", stopDragging);
+            }
+        }
+    })();
+
+</script>

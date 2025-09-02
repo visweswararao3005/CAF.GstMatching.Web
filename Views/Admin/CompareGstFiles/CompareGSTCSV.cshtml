@@ -1,0 +1,185 @@
+﻿@{
+	ViewData["Title"] = "Compare GST File";
+	var responseDict = ViewBag.ResponseDict as Dictionary<string, string> ?? new Dictionary<string, string>();
+	var ticket = ViewBag.Ticket as CAF.GstMatching.Models.PurchaseTicketModel.TicketsStatusModel;
+	var fileName = ViewBag.FileName as string ?? null;
+	var fromDate = ViewBag.fromDate;
+	var toDate = ViewBag.toDate;
+}
+
+@{
+	<link rel="stylesheet" href="~/css/CompareGST.css" />
+}
+
+<div class="container mt-1">
+	<h2 class="text-primary">You can compare GST Purchase Register Files</h2>
+
+	<table class="gst-comparison-table">
+		<tr>
+			<th>Request Number</th>
+			<td>@ticket?.RequestNo</td>
+		</tr>
+		@*<tr>
+			<th>Client Name</th>
+			<td>@ticket?.EXERTUSERNAME</td>
+		</tr>
+		<tr>
+			<th>Client GSTIN</th>
+			<td>@ticket?.ClientGSTIN</td>
+		</tr>
+		 <tr>
+		<th>Financial Year</th>
+		<td>@ticket?.FinancialYear</td>
+		</tr>
+		<tr>
+		<th>Period Type</th>
+		<td>@ticket?.PeriodType</td> 
+		</tr>*@
+		<tr>
+			<th>File Name</th>
+			<td>@ticket?.FileName</td>
+		</tr>
+		<tr>
+			<th>Period</th>
+			<td>@ticket?.TxnPeriod</td>
+		</tr>
+		<tr>
+			<th>Created Date and Time</th>
+			<td>@ticket?.RequestCreatedDate?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td>
+		</tr>
+		@*<tr>
+			<th>Upload Date and Time</th>
+			<td>@ticket?.RequestUpdatedDate?.ToString("yyyy-MMM-dd hh:mm:ss tt")</td>
+		</tr>*@
+		
+	</table>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000;">
+	<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 20px; text-align: center;">
+		<div class="spinner"></div>
+		<p>Loading...</p>
+	</div>
+</div>
+
+<form asp-action="CompareCSV" asp-controller="Admin" method="post" enctype="multipart/form-data" id="gstForm">
+	<input type="hidden" name="ticketnumber" value="@ticket?.RequestNo" />
+	<input type="hidden" name="ClientGSTIN" value="@ticket?.ClientGSTIN" />
+
+	<div class="form-group">
+		<div class="label-container">
+			<label for="Portal" class="d-inline-block">Select GST Purchase Register Portal File :</label>
+			<a href="@Url.Action("DownloadSampleFileCSV", "Admin")">PRSamplePortal.csv</a>
+			<a href="@Url.Action("DownloadSampleFileXLS", "Admin")">PRSamplePortal.xls</a>
+			<a href="@Url.Action("DownloadSampleFileXLSX", "Admin")">PRSamplePortal.xlsx</a>
+		</div>
+		<div class="custom-file-upload">
+			<input type="text" id="fileNameDisplay" readonly placeholder="No file selected" />
+			<button type="button" onclick="document.getElementById('Portal').click()">Browse</button>
+			<input type="file" name="Portal" id="Portal" accept=".csv, .xls, .xlsx" />
+		</div>
+		<div id="purchasePortalFileError" class="text-danger" style="display: none;">Please select a file.</div>
+
+	</div>
+
+	<div class="form-group mt-1">
+		<button type="submit" class="btn btn-primary">Compare</button>
+	</div>
+</form>
+
+
+<!-- Error Message -->
+@if (ViewBag.ErrorMessage != null)
+{
+	<div class="alert alert-danger mt-1 error-message-scroll">
+		❌ @Html.Raw(((string)ViewBag.ErrorMessage).Replace("\n", "<br/>"))
+	</div>
+}
+
+<div class="button-container">
+	<button class="action-button btn btn-primary" onclick="clearFormValuesAndRedirect()">Back to Current Requests</button>
+</div>
+
+@section Scripts {
+	// <script>
+	// 	document.getElementById('gstForm').addEventListener('submit', function (e) {
+	// 		document.getElementById('loadingOverlay').style.display = 'block';
+	// 	});
+	// </script>
+	<script>
+		// document.getElementById('gstForm').addEventListener('submit', function (e) {
+		// 	document.getElementById('loadingOverlay').style.display = 'block';
+		// });
+
+		// Function to save file name to sessionStorage
+		function saveFormValues() {
+			const formData = {
+				gstFileName: document.getElementById("fileNameDisplay").value // Store displayed file name
+			};
+			sessionStorage.setItem("compareFormValues", JSON.stringify(formData));
+		}
+
+		// Function to update file name display
+		function updateFileNameDisplay(fileName) {
+			const fileNameDisplay = document.getElementById("fileNameDisplay");
+			fileNameDisplay.value = fileName || "No file selected";
+		}
+
+		// Function to load file name from sessionStorage
+		function loadFormValues() {
+			const savedValues = sessionStorage.getItem("compareFormValues");
+			if (savedValues) {
+				const formData = JSON.parse(savedValues);
+				updateFileNameDisplay(formData.gstFileName || "");
+			}
+		}
+
+		// Form submission handler
+		document.getElementById("gstForm").addEventListener("submit", function (event) {
+			var fileInput = document.getElementById("Portal");
+			var fileError = document.getElementById("purchasePortalFileError")
+			if (fileInput.files.length === 0) {
+				event.preventDefault();
+				fileError.style.display = "block";
+				return;
+			} else {
+				fileError.style.display = "none";
+				document.getElementById('loadingOverlay').style.display = 'block';
+			}
+			saveFormValues();
+		});
+
+		// Load saved values and handle file input changes
+		document.addEventListener("DOMContentLoaded", function () {
+			// Check if there is an error message; if so, load saved values
+			const hasError = @Json.Serialize(ViewBag.ErrorMessage != null);
+			if (hasError) {
+				loadFormValues();
+			} else {
+				// Clear sessionStorage if there is no error (e.g., fresh page load)
+				sessionStorage.removeItem("compareFormValues");
+				updateFileNameDisplay(""); // Clear file name display
+			}
+
+			// Update file name display when a file is selected
+			document.getElementById("Portal").addEventListener("change", function () {
+				const fileName = this.files[0]?.name || "";
+				updateFileNameDisplay(fileName);
+				saveFormValues();
+			});
+
+			// Trigger file input click when text input is clicked
+			document.getElementById("fileNameDisplay").addEventListener("click", function () {
+				document.getElementById("Portal").click();
+			});
+		});
+
+		// Clear sessionStorage when navigating back to current requests
+		function clearFormValuesAndRedirect() {
+			sessionStorage.removeItem("compareFormValues");
+			updateFileNameDisplay(""); // Clear file name display
+			window.location.href = '@Url.Action("OpenTaskCSV", "Admin", new { fromDate = fromDate, toDate = toDate })';
+		}
+	</script>
+}

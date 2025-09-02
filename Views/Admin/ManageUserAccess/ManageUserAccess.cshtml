@@ -1,0 +1,156 @@
+﻿@{
+    ViewData["Title"] = "Manage User Access";
+    var allUsers = ViewBag.allUsers as List<CAF.GstMatching.Models.UserModel.MainUserModel> ?? new List<CAF.GstMatching.Models.UserModel.MainUserModel>();
+    var totalCount = allUsers.Count;
+    var adminCount = allUsers.Count(u => u.Status == "1");
+    var clientCount = totalCount - adminCount;
+}
+
+<link rel="stylesheet" href="~/css/ManageUserAccess.css" />
+
+<div class="user-access-wrapper">
+    <!-- Left panel -->
+    <div class="user-list-panel">
+        <h4>All Users (@totalCount)</h4>
+
+        <div class="legend">
+            <span class="legend-box admin-color"></span> Admin Users (@adminCount)
+            <span class="legend-box client-color" style="margin-left: 20px;"></span> Client Users (@clientCount)
+        </div>
+
+        <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search users..." class="search-box" />
+
+        <ul id="userList">
+            @foreach (var user in allUsers)
+            {
+                var cssClass = user.Status == "1" ? "admin-user" : "client-user";
+                <li class="user-item @cssClass" data-email="@user.Email" onclick="selectUser('@user.Email', '@user.Designation')">
+                    @user.USERNAME - @user.Designation
+                </li>
+            }
+        </ul>
+    </div>
+
+    <!-- Right panel -->
+    <div class="access-form-panel">
+        <form method="post" asp-action="UpdateUserAccess" asp-controller="Admin" onsubmit="return validateForm();">
+            <input type="hidden" id="selectedUser" name="SelectedUser" />
+            <input type="hidden" id="selectedGstin" name="SelectedGstin" />
+
+            <div class="form-group">
+                <label>Access Valid Upto</label>
+                <input type="text" id="accessValidUpto" name="AccessValidUpto" readonly />
+            </div>
+
+            <button type="button" class="action-btn" id="extendButton">Extend</button>
+
+            <div id="extendSection" style="display:none; margin-top: 15px;">
+                <div class="form-group">
+                    <label>New Access Upto</label>
+                    <input type="date" id="newValidDate" name="NewValidDate" min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                </div>
+                <button type="submit" class="action-btn">Submit</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (ViewBag.Message != null)
+{
+    <div id="successModal" class="modal-overlay" style="display:flex;">
+        <div class="modal-content">
+            <h3>Success</h3>
+            <p>@ViewBag.Message</p>
+            <div class="modal-buttons">
+                <button type="button" onclick="closeSuccessModal()">OK</button>
+            </div>
+        </div>
+    </div>
+}
+<div id="warningModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h3>Warning</h3>
+        <p>Please select a user first.</p>
+        <div class="modal-buttons">
+            <button type="button" onclick="closeWarningModal()">OK</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const baseUrl = '@Url.Content("~/")'; // automatically gives correct root path
+    function selectUser(userEmail, gstin) {
+        // Set hidden input
+        document.getElementById('selectedUser').value = userEmail;
+        document.getElementById('selectedGstin').value = gstin;
+
+        // Highlight selected user
+        const items = document.querySelectorAll("#userList .user-item");
+        items.forEach(item => item.classList.remove("selected-user"));
+
+        const selected = Array.from(items).find(li => li.dataset.email === userEmail);
+        if (selected) {
+            selected.classList.add("selected-user");
+        }
+
+        // Fetch user’s current access date
+        $.get(`${baseUrl}Admin/GetUserAccessValidDate`, { email: userEmail }, function (date) {
+            $('#accessValidUpto').val(date);
+            $('#extendSection').hide();
+        });
+
+        var selectedUser = document.getElementById('selectedUser');
+        var newValidDate = document.getElementById('newValidDate');
+        if (selectedUser && selectedUser.value) {
+            if (newValidDate) {
+                newValidDate.value = '';
+            }
+        }
+    }
+
+    document.getElementById('extendButton')?.addEventListener('click', function () {
+        document.getElementById('extendSection').style.display = 'block';
+    });
+
+    function filterUsers() {
+        var input = document.getElementById("userSearch").value.toLowerCase();
+        var users = document.getElementById("userList").getElementsByTagName("li");
+
+        for (let i = 0; i < users.length; i++) {
+            let item = users[i];
+            let originalText = item.getAttribute("data-original") || item.textContent;
+            item.setAttribute("data-original", originalText); // Preserve original text
+
+            let lowerOriginal = originalText.toLowerCase();
+            if (lowerOriginal.includes(input)) {
+                item.style.display = "";
+
+                if (input) {
+                    let regex = new RegExp(`(${input})`, "gi");
+                    item.innerHTML = originalText.replace(regex, `<span class="highlight">$1</span>`);
+                } else {
+                    item.innerHTML = originalText; // No highlight if input is empty
+                }
+            } else {
+                item.style.display = "none";
+            }
+        }
+    }
+
+    function closeSuccessModal() {
+        document.getElementById("successModal").style.display = "none";
+    }
+
+    function validateForm() {
+        if (!document.getElementById("selectedUser").value) {
+            document.getElementById("warningModal").style.display = "flex";
+            return false;
+        }
+        return true;
+    }
+
+    function closeWarningModal() {
+        document.getElementById("warningModal").style.display = "none";
+    }
+
+</script>
