@@ -46,7 +46,7 @@
                     <tr>
                         <th style="width: 6%">@(responseDict.ContainsKey("lblSLNo") ? responseDict["lblSLNo"] : "SL No")</th> <!-- New SL No column -->
                         <th style="width: 15%">@(responseDict.ContainsKey("lblRequestNumber") ? responseDict["lblRequestNumber"] : "Request Number")</th>
-                        @*<th style="width: 10%">@(responseDict.ContainsKey("lblVendorName") ? responseDict["lblVendorName"] : "Vendor Name")</th> *@
+                        <th style="width: 10%">@(responseDict.ContainsKey("lblVendorName") ? responseDict["lblVendorName"] : "Vendor Name")</th> 
 
                         <th style="width: 10%">@(responseDict.ContainsKey("lblVendorName") ? responseDict["lblVendorName"] : "Invoice File Name")</th>
                         <th style="width: 5%">@(responseDict.ContainsKey("lblVendorName") ? responseDict["lblVendorName"] : "EInvoice File Name")</th>
@@ -72,7 +72,7 @@
                             <td>
                                 @if (@ticket.TicketStatus?.Trim() == "Analysed")
                                 {
-                                    <a href="@Url.Action("CompareSLCSVResults", "Admin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
+                                    <a href="@Url.Action("CompareSLCSVResults", "MainAdmin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
                                         @ticket.RequestNumber
                                     </a>
                                 }
@@ -81,19 +81,19 @@
                                     @ticket.RequestNumber
                                 }
                             </td>
-                            @*<td>@ticket.ClientName</td> *@
+                            <td>@ticket.ClientName</td> 
                             <td>
-                                <a href="@Url.Action("ExportSLInvoiceFile", "Admin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
+                                <a href="@Url.Action("ExportSLInvoiceFile", "MainAdmin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
                                     @ticket.FileName
                                 </a>
                             </td>
                             <td>
-                                <a href="@Url.Action("ExportSLEInvoiceFile", "Admin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
+                                <a href="@Url.Action("ExportSLEInvoiceFile", "MainAdmin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
                                     @ticket.EInvoiceFileName
                                 </a>
                             </td>
                             <td>
-                                <a href="@Url.Action("ExportSLEWayBillFile", "Admin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
+                                <a href="@Url.Action("ExportSLEWayBillFile", "MainAdmin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
                                     @ticket.EWayBillFileName
                                 </a>
                             </td>
@@ -104,7 +104,7 @@
                             <td>@ticket.Period</td>
                             <td>@ticket.TicketStatus</td>
                             <td>
-                                <a href="@Url.Action("CompareSalesLedgerGSTCSV", "Admin", new { ticketNumber = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin, fromDate = fromDate, toDate = toDate })"
+                                <a href="@Url.Action("CompareSalesLedgerGSTCSV", "MainAdmin", new { ticketNumber = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin, fromDate = fromDate, toDate = toDate })"
                                    class="btn-analyse">
                                     @(responseDict.ContainsKey("btnAnalyse") ? responseDict["btnAnalyse"] : "Analyse")
                                 </a>
@@ -135,6 +135,6 @@
         const toDate = document.getElementById('toDate').value;
 
         // Redirect with query parameters to persist dates
-        window.location.href = `@Url.Action("SalesLedgerCurrentRequestsCSV", "Admin")` + `?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`;
+        window.location.href = `@Url.Action("SalesLedgerCurrentRequestsCSV", "MainAdmin")` + `?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`;
     }
 </script>

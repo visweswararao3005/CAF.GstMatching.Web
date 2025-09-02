@@ -19,7 +19,7 @@
 			<th>Request Number</th>
 			<td>@ticket?.RequestNo</td>
 		</tr>
-		@*<tr>
+		<tr>
 			<th>Client Name</th>
 			<td>@ticket?.EXERTUSERNAME</td>
 		</tr>
@@ -27,7 +27,7 @@
 			<th>Client GSTIN</th>
 			<td>@ticket?.ClientGSTIN</td>
 		</tr>
-		 <tr>
+		@* <tr>
 		<th>Financial Year</th>
 		<td>@ticket?.FinancialYear</td>
 		</tr>
@@ -63,16 +63,16 @@
 	</div>
 </div>
 
-<form asp-action="CompareCSV" asp-controller="Admin" method="post" enctype="multipart/form-data" id="gstForm">
+<form asp-action="CompareCSV" asp-controller="MainAdmin" method="post" enctype="multipart/form-data" id="gstForm">
 	<input type="hidden" name="ticketnumber" value="@ticket?.RequestNo" />
 	<input type="hidden" name="ClientGSTIN" value="@ticket?.ClientGSTIN" />
 
 	<div class="form-group">
 		<div class="label-container">
 			<label for="Portal" class="d-inline-block">Select GST Purchase Register Portal File :</label>
-			<a href="@Url.Action("DownloadSampleFileCSV", "Admin")">PRSamplePortal.csv</a>
-			<a href="@Url.Action("DownloadSampleFileXLS", "Admin")">PRSamplePortal.xls</a>
-			<a href="@Url.Action("DownloadSampleFileXLSX", "Admin")">PRSamplePortal.xlsx</a>
+			<a href="@Url.Action("DownloadSampleFileCSV", "MainAdmin")">PRSamplePortal.csv</a>
+			<a href="@Url.Action("DownloadSampleFileXLS", "MainAdmin")">PRSamplePortal.xls</a>
+			<a href="@Url.Action("DownloadSampleFileXLSX", "MainAdmin")">PRSamplePortal.xlsx</a>
 		</div>
 		<div class="custom-file-upload">
 			<input type="text" id="fileNameDisplay" readonly placeholder="No file selected" />
@@ -179,7 +179,7 @@
 		function clearFormValuesAndRedirect() {
 			sessionStorage.removeItem("compareFormValues");
 			updateFileNameDisplay(""); // Clear file name display
-			window.location.href = '@Url.Action("OpenTaskCSV", "Admin", new { fromDate = fromDate, toDate = toDate })';
+			window.location.href = '@Url.Action("OpenTaskCSV", "MainAdmin", new { fromDate = fromDate, toDate = toDate })';
 		}
 	</script>
 }

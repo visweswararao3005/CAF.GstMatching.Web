@@ -30,7 +30,7 @@
             <th>Request Number</th>
             <td>@ticket?.RequestNo</td>
         </tr>
-        @*<tr>
+        <tr>
             <th>Client Name</th>
             <td>@ticket?.EXERTUSERNAME</td>
         </tr>
@@ -38,7 +38,7 @@
             <th>Client GSTIN</th>
             <td>@ticket?.ClientGSTIN</td>
         </tr>
-        <tr>
+        @*<tr>
             <th>Financial Year</th>
             <td>@ticket?.FinancialYear</td>
         </tr>
@@ -136,7 +136,7 @@
 }
 
 <div class="button-container">
-    <button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("OpenTaskAPI_IRIS", "Admin", new { fromDate = fromDate, toDate = toDate })'">Back to Current Requests</button>
+    <button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("OpenTaskAPI_IRIS", "MainAdmin", new { fromDate = fromDate, toDate = toDate })'">Back to Current Requests</button>
 </div>
 
 @section Scripts
@@ -182,7 +182,7 @@
             const gstin = $("#ClientGSTIN").val();
             const ticketNo = $("#ticketnumber").val();
 
-            const compareUrl = '@Url.Action("CompareAPI_IRIS", "Admin")';
+            const compareUrl = '@Url.Action("CompareAPI_IRIS", "MainAdmin")';
             // $("#otpModal").modal("show");
 
             $.post(compareUrl, { ticketnumber: ticketNo, ClientGSTIN: gstin }, function (res) {
@@ -261,7 +261,7 @@
             }
 
            // console.log("All passed");
-            $.post('@Url.Action("SubmitOtpAndContinue", "Admin")', {
+            $.post('@Url.Action("SubmitOtpAndContinue", "MainAdmin")', {
                 ClientGSTIN: gstin,
                 ticketNo: ticketNo,
                 otp: otp,
@@ -294,7 +294,7 @@
             $("#otpSubmitBtn").show();
             retryCount = 0;
 
-            const url = "@Html.Raw(Url.Action("CompareGSTAPI_IRIS", "Admin", new { ticketnumber = ticket?.RequestNo, ClientGSTIN = ticket?.ClientGSTIN }))";
+            const url = "@Html.Raw(Url.Action("CompareGSTAPI_IRIS", "MainAdmin", new { ticketnumber = ticket?.RequestNo, ClientGSTIN = ticket?.ClientGSTIN }))";
             window.location.href = url;
         }
 
@@ -305,7 +305,7 @@
 
         function callFourthApi(gstin, ticketNo) {
 
-            $.post('@Url.Action("ContinueWith4thApi", "Admin")', {
+            $.post('@Url.Action("ContinueWith4thApi", "MainAdmin")', {
                 ClientGSTIN: gstin,
                 ticketnumber: ticketNo             
             }, function (res) {
@@ -334,7 +334,7 @@
         console.log("fifthApiRetrySeconds", fifthApiRetrySeconds);
 
         function callFifthApi(gstin, ticketNo, token) {
-            const fifthApiUrl = '@Url.Action("ContinueWith5thApi", "Admin")'; // Replace with your actual action name
+            const fifthApiUrl = '@Url.Action("ContinueWith5thApi", "MainAdmin")'; // Replace with your actual action name
 
             $.get(fifthApiUrl, { ticketnumber: ticketNo, clientGSTIN: gstin, token5: token }, function (res) {
                 //console.log("Fifth API Success:", res);
@@ -358,8 +358,8 @@
         }
 
         function CompareDataTables(ticketNo , gstin) {
-          
-            const compareUrl = '@Url.Action("CompareDataTables", "Admin")';
+
+            const compareUrl = '@Url.Action("CompareDataTables", "MainAdmin")';
             const url = `${compareUrl}?ticketnumber=${encodeURIComponent(ticketNo)}&clientGSTIN=${encodeURIComponent(gstin)}`;
             window.location.href = url;
             $("#loadingOverlay").hide();

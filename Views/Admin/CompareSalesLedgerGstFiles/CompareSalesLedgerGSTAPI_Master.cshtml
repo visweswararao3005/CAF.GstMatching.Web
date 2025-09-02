@@ -310,6 +310,11 @@
                     $("#loadingOverlay").show();
                     callFifthApi(gstin, ticketNo, token);
                 }
+                else if (res.message && res.message.includes("File generation")) {
+                    // Server says to wait – start countdown modal
+                    $("#loadingOverlay").hide();
+                    startForthApiRetryCountdown(gstin, ticketNo);
+                }
                 else if (res.goToCompare) {
                     $("#responseMessage").text("✅ Final API Success.");
                     $("#loadingOverlay").show();
@@ -362,6 +367,28 @@
             const m = Math.floor(seconds / 60).toString().padStart(2, '0');
             const s = (seconds % 60).toString().padStart(2, '0');
             return `${m}:${s}`;
+        }
+
+        function startForthApiRetryCountdown(gstin, ticketNo) {
+            let remaining = fifthApiRetrySeconds;
+
+            $("#fifthApiCountdown").text(formatTime(remaining));
+            $("#fifthApiWaitModal").modal({
+                backdrop: 'static',
+                keyboard: false
+            }).modal("show");
+
+            fifthApiInterval = setInterval(() => {
+                remaining--;
+                $("#fifthApiCountdown").text(formatTime(remaining));
+
+                if (remaining <= 0) {
+                    clearInterval(fifthApiInterval);
+                    $("#fifthApiWaitModal").modal("hide");
+                    $("#loadingOverlay").show();
+                    callFourthApi(gstin, ticketNo);
+                }
+            }, 1000);
         }
 
         function startFifthApiRetryCountdown(gstin, ticketNo, token) {

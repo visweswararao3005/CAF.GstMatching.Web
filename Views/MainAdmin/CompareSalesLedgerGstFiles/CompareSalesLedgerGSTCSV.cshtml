@@ -19,14 +19,14 @@
             <th>Request Number</th>
             <td>@ticket?.RequestNumber</td>
         </tr>
-        @*<tr>
+        <tr>
             <th>Client Name</th>
             <td>@ticket?.ClientName</td>
         </tr>
         <tr>
             <th>Client GSTIN</th>
             <td>@ticket?.ClientGstin</td>
-        </tr>*@
+        </tr>
         <tr>
             <th>File Name</th>
             <td>@ticket?.FileName</td>
@@ -55,16 +55,16 @@
     </div>
 </div>
 
-<form asp-action="CompareSalesLedgerCSV" asp-controller="Admin" method="post" enctype="multipart/form-data" id="eInvoiceGstForm">
+<form asp-action="CompareSalesLedgerCSV" asp-controller="MainAdmin" method="post" enctype="multipart/form-data" id="eInvoiceGstForm">
     <input type="hidden" name="ticketnumber" value="@ticket?.RequestNumber" />
     <input type="hidden" name="ClientGSTIN" value="@ticket?.ClientGstin" />
 
     <div class="form-group">
         <div class="label-container">
             <label for="EInvoice" class="d-inline-block">Select GST Sales Register EInvoice Portal File :</label>
-            <a href="@Url.Action("DownloadEInvoiceSampleFileCSV", "Admin")">SRSamplePortalEInvoice.csv</a>
-            <a href="@Url.Action("DownloadEInvoiceSampleFileXLS", "Admin")">SRSamplePortalEInvoice.xls</a>
-            <a href="@Url.Action("DownloadEInvoiceSampleFileXLSX", "Admin")">SRSamplePortalEInvoice.xlsx</a>
+            <a href="@Url.Action("DownloadEInvoiceSampleFileCSV", "MainAdmin")">SRSamplePortalEInvoice.csv</a>
+            <a href="@Url.Action("DownloadEInvoiceSampleFileXLS", "MainAdmin")">SRSamplePortalEInvoice.xls</a>
+            <a href="@Url.Action("DownloadEInvoiceSampleFileXLSX", "MainAdmin")">SRSamplePortalEInvoice.xlsx</a>
         </div>
         <div class="custom-file-upload">
             <input type="text" id="EInvoiceNameDisplay" readonly placeholder="No file selected" />
@@ -77,9 +77,9 @@
     <div class="form-group">
         <div class="label-container">
             <label for="EWayBill" class="d-inline-block">Select GST Sales Register EWayBill Portal File :</label>
-            <a href="@Url.Action("DownloadEWayBillSampleFileCSV", "Admin")">SRSamplePortalEWayBill.csv</a>
-            <a href="@Url.Action("DownloadEWayBillSampleFileXLS", "Admin")">SRSamplePortalEWayBill.xls</a>
-            <a href="@Url.Action("DownloadEWayBillSampleFileXLSX", "Admin")">SRSamplePortalEWayBill.xlsx</a>
+            <a href="@Url.Action("DownloadEWayBillSampleFileCSV", "MainAdmin")">SRSamplePortalEWayBill.csv</a>
+            <a href="@Url.Action("DownloadEWayBillSampleFileXLS", "MainAdmin")">SRSamplePortalEWayBill.xls</a>
+            <a href="@Url.Action("DownloadEWayBillSampleFileXLSX", "MainAdmin")">SRSamplePortalEWayBill.xlsx</a>
         </div>
         <div class="custom-file-upload">
             <input type="text" id="EWayBillNameDisplay" readonly placeholder="No file selected" />
@@ -207,7 +207,7 @@
             sessionStorage.removeItem("compareEInvoiceFormValues");
             updateFileNameDisplay("EWayBillNameDisplay", "");
             updateFileNameDisplay("EInvoiceNameDisplay", "");
-            window.location.href = '@Url.Action("SalesLedgerCurrentRequestsCSV", "Admin", new { fromDate = fromDate, toDate = toDate })';
+            window.location.href = '@Url.Action("SalesLedgerCurrentRequestsCSV", "MainAdmin", new { fromDate = fromDate, toDate = toDate })';
         }
     </script>
 }

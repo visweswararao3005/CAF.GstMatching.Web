@@ -184,8 +184,8 @@
     </div>
 
     <div class="button-container">
-        <button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("SalesLedgerCurrentRequestsCSV", "Admin")'">Back to Current Requests</button>
-        <button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("ExportSLReport", "Admin",new { requestNo = ticket?.RequestNumber, ClientGSTIN = @ticket?.ClientGstin })'">Export Comparison Results</button>
+        <button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("SalesLedgerCurrentRequestsCSV", "MainAdmin")'">Back to Current Requests</button>
+        <button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("ExportSLReport", "MainAdmin",new { requestNo = ticket?.RequestNumber, ClientGSTIN = @ticket?.ClientGstin })'">Export Comparison Results</button>
         <button class="action-button btn btn-primary" onclick="SLcloseRequest('@ticket?.RequestNumber', '@ticket?.ClientGstin')">Close Request</button>
 
     </div>
@@ -212,7 +212,7 @@
         $('#loadingOverlay').show();
 
         $.ajax({
-            url: '@Url.Action("CloseSLRequest", "Admin")',
+            url: '@Url.Action("CloseSLRequest", "MainAdmin")',
             type: 'POST',
             data: { RequestNumber: RequestNumber, ClientGstin: ClientGstin },
             success: function (response) {
@@ -248,7 +248,7 @@
                 modal.style.display = 'none';
             }
             // Redirect to ClosedRequests
-            window.location.href = '@Url.Action("SalesLedgerClosedRequests", "Admin")';
+            window.location.href = '@Url.Action("SalesLedgerClosedRequests", "MainAdmin")';
         } catch (error) {
             console.error('Error in closeModal:', error);
         }
