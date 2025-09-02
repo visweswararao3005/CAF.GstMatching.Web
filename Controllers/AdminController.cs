@@ -22,14 +22,27 @@ using CAF.GstMatching.Business.Interface;
 using CAF.GstMatching.Models;
 using CAF.GstMatching.Models.CompareGst;
 using System.Security.Cryptography;
+using System.Linq;
+using System.Net.Http;
+using Org.BouncyCastle.Asn1.Ocsp;
+using System.IO;
 using System.IO.Compression;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Tar;
+using SharpCompress.Readers;
+using SharpCompress.Common;
+using OfficeOpenXml.FormulaParsing.LexicalAnalysis;
+using System.Diagnostics;
 using CAF.GstMatching.Models.UserModel;
+using Org.BouncyCastle.Bcpg;
+using static CAF.GstMatching.Web.Controllers.HomeController;
 using CAF.GstMatching.Models.PurchaseTicketModel;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
+using DocumentFormat.OpenXml.Spreadsheet;
+using Org.BouncyCastle.Utilities.Net;
 using System.Net.Sockets;
+using Razorpay.Api;
 
 namespace CAF.GstMatching.Web.Controllers
 {
@@ -1993,7 +2006,7 @@ namespace CAF.GstMatching.Web.Controllers
         {
             string sessionId = HttpContext.Session.Id;
             ViewBag.Messages = "Admin";
-
+            ViewData["ActiveAction"] = "act2";
             var UserAPIData = await _userBusiness.GetClientAPIData(ClientGSTIN);
 
             string UserName = UserAPIData.GstPortalUsername;
@@ -2134,6 +2147,7 @@ namespace CAF.GstMatching.Web.Controllers
         public async Task<IActionResult> ContinueWith4thApi_Master(string ticketnumber, string ClientGSTIN)
         {
             ViewBag.Messages = "Admin";
+            ViewData["ActiveAction"] = "act2";
             string sessionId = HttpContext.Session.Id;
             var Ticket = await _purchaseTicketBusiness.GetUserDataBasedOnTicketAsync(ticketnumber, ClientGSTIN);
             ViewBag.Ticket = Ticket;
@@ -2317,6 +2331,7 @@ namespace CAF.GstMatching.Web.Controllers
         public async Task<IActionResult> CompareDataTables_Master(string ticketnumber, string ClientGSTIN)
         {
             ViewBag.Messages = "Admin";
+            ViewData["ActiveAction"] = "act2";
             var Ticket = await _purchaseTicketBusiness.GetUserDataBasedOnTicketAsync(ticketnumber, ClientGSTIN);
             ViewBag.Ticket = Ticket;
 
@@ -7016,7 +7031,7 @@ namespace CAF.GstMatching.Web.Controllers
         public async Task<IActionResult> CompareSalesLedgerAPI_Master(string ticketnumber, string ClientGSTIN)
         {
             ViewBag.Messages = "Admin";
-            ViewData["ActiveAction"] = "act2";
+            ViewData["ActiveAction"] = "act6";
             string sessionId = HttpContext.Session.Id;
             var Ticket = await _purchaseTicketBusiness.GetUserDataBasedOnTicketAsync(ticketnumber, ClientGSTIN);
             ViewBag.Ticket = Ticket;
@@ -7153,7 +7168,7 @@ namespace CAF.GstMatching.Web.Controllers
         {
             string sessionId = HttpContext.Session.Id;
             ViewBag.Messages = "Admin";
-
+            ViewData["ActiveAction"] = "act6";
             var UserAPIData = await _userBusiness.GetClientAPIData(ClientGSTIN);
 
             string UserName = UserAPIData.GstPortalUsername;
@@ -7293,6 +7308,7 @@ namespace CAF.GstMatching.Web.Controllers
         public async Task<IActionResult> SLContinueWith4thApi_Master(string ticketnumber, string ClientGSTIN)
         {
             ViewBag.Messages = "Admin";
+            ViewData["ActiveAction"] = "act6";
             string sessionId = HttpContext.Session.Id;
             var Ticket = await _sLTicketsBusiness.GetUserDataBasedOnTicketAsync(ticketnumber, ClientGSTIN);
             ViewBag.Ticket = Ticket;
@@ -7415,6 +7431,31 @@ namespace CAF.GstMatching.Web.Controllers
                     return Json(new { success = true, token = token });
                 }
 
+                //Result 5 : {
+                //              "status_cd": "0",
+                //              "status_desc": "GSTR request failed",
+                //              "error": {
+                //                "message": "File generation is in progress",
+                //                "error_cd": "EINV30109"
+                //              },
+                //              "header": {
+                //                "gst_username": "MH_NT2.1641",
+                //                "state_cd": "27",
+                //                "ip_address": "14.98.237.54",
+                //                "txn": "6581dc1df79247838c1b7683081a876e",
+                //                "client_id": "GSTS36731818-d2d3-4036-816c-d3e559eb1dde",
+                //                "client_secret": "GSTSa012637b-1daa-43be-aa1f-85d83ce132fb",
+                //                "traceparent": "00-8d642bc55fac3456ab72412df2bf4dec-76af85063d80f8a8-00",
+                //                "ret_period": "032025",
+                //                "gstin": "27AAGCB1286Q1Z4"
+                //              }
+                //            }
+
+                if (result["status_cd"]?.ToString() == "0" && result["error"]["error_cd"]?.ToString() == "EINV30109")
+                {
+                    return Json(new { message = "File generation" });
+                }
+
                 //Result 3 : {
                 //			  "status_cd": "0",
                 //			  "status_desc": "GSTR request failed",
@@ -7447,6 +7488,7 @@ namespace CAF.GstMatching.Web.Controllers
         public async Task<IActionResult> SLContinueWithFinalApi_Master(string ticketnumber, string ClientGSTIN, string token5)
         {
             ViewBag.Messages = "Admin";
+            ViewData["ActiveAction"] = "act6";
             string sessionId = HttpContext.Session.Id;
             var ticket = await _sLTicketsBusiness.GetUserDataBasedOnTicketAsync(ticketnumber, ClientGSTIN);
             ViewBag.Ticket = ticket;

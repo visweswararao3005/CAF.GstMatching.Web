@@ -22,10 +22,20 @@ using CAF.GstMatching.Business.Interface;
 using CAF.GstMatching.Models;
 using CAF.GstMatching.Models.CompareGst;
 using System.Security.Cryptography;
+using System.Linq;
+using System.Net.Http;
+using Org.BouncyCastle.Asn1.Ocsp;
+using System.IO;
 using System.IO.Compression;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Tar;
+using SharpCompress.Readers;
+using SharpCompress.Common;
+using OfficeOpenXml.FormulaParsing.LexicalAnalysis;
+using System.Diagnostics;
 using CAF.GstMatching.Models.UserModel;
+using Org.BouncyCastle.Bcpg;
+using static CAF.GstMatching.Web.Controllers.HomeController;
 using CAF.GstMatching.Models.PurchaseTicketModel;
 using System.Net.Http.Headers;
 
@@ -3683,12 +3693,12 @@ namespace CAF.GstMatching.Web.Controllers
             }
 
             //var Tickets = await _purchaseTicketBusiness.GetAllCloseTicketsStatusAsync(fromDateTime, toDateTime);
-            //         var email = MySession.Current.Email; // Get the email from session
-            //var clients = await _userBusiness.GetMainAdminClients(email);
-            //string[] gstinArray = clients.Select(c => c.ClientGSTIN).ToArray();
-            //var Tickets = await _purchaseTicketBusiness.GetClientsClosedTicketsStatusAsync(gstinArray, fromDateTime, toDateTime);
+            var email = MySession.Current.Email; // Get the email from session
+            var clients = await _userBusiness.GetAdminClients(email);
+            string[] gstinArray = clients.Select(c => c.ClientGSTIN).ToArray();
+            var Tickets = await _purchaseTicketBusiness.GetClientsClosedTicketsStatusAsync(gstinArray, fromDateTime, toDateTime);
 
-            var Tickets = await _purchaseTicketBusiness.GetCloseTicketsStatusAsync(MySession.Current.gstin, fromDateTime, toDateTime); //(ViewBag.UserGSTIN); // Fetch pending tickets based on user_gstin
+            //var Tickets = await _purchaseTicketBusiness.GetCloseTicketsStatusAsync(MySession.Current.gstin, fromDateTime, toDateTime); //(ViewBag.UserGSTIN); // Fetch pending tickets based on user_gstin
 
             ViewBag.Tickets = Tickets;
 
@@ -6999,7 +7009,7 @@ namespace CAF.GstMatching.Web.Controllers
         public async Task<IActionResult> CompareSalesLedgerAPI_Master(string ticketnumber, string ClientGSTIN)
         {
             ViewBag.Messages = "MainAdmin";
-            ViewData["ActiveAction"] = "act2";
+            ViewData["ActiveAction"] = "act6";
             string sessionId = HttpContext.Session.Id;
             var Ticket = await _purchaseTicketBusiness.GetUserDataBasedOnTicketAsync(ticketnumber, ClientGSTIN);
             ViewBag.Ticket = Ticket;
@@ -7136,7 +7146,7 @@ namespace CAF.GstMatching.Web.Controllers
         {
             string sessionId = HttpContext.Session.Id;
             ViewBag.Messages = "MainAdmin";
-            ViewData["ActiveAction"] = "act2";
+            ViewData["ActiveAction"] = "act6";
 
             var UserAPIData = await _userBusiness.GetClientAPIData(ClientGSTIN);
 
@@ -7277,7 +7287,7 @@ namespace CAF.GstMatching.Web.Controllers
         public async Task<IActionResult> SLContinueWith4thApi_Master(string ticketnumber, string ClientGSTIN)
         {
             ViewBag.Messages = "MainAdmin";
-            ViewData["ActiveAction"] = "act2";
+            ViewData["ActiveAction"] = "act6";
             string sessionId = HttpContext.Session.Id;
             var Ticket = await _sLTicketsBusiness.GetUserDataBasedOnTicketAsync(ticketnumber, ClientGSTIN);
             ViewBag.Ticket = Ticket;
@@ -7432,7 +7442,7 @@ namespace CAF.GstMatching.Web.Controllers
         public async Task<IActionResult> SLContinueWithFinalApi_Master(string ticketnumber, string ClientGSTIN, string token5)
         {
             ViewBag.Messages = "MainAdmin";
-            ViewData["ActiveAction"] = "act2";
+            ViewData["ActiveAction"] = "act6";
             string sessionId = HttpContext.Session.Id;
             var ticket = await _sLTicketsBusiness.GetUserDataBasedOnTicketAsync(ticketnumber, ClientGSTIN);
             ViewBag.Ticket = ticket;
@@ -9773,12 +9783,12 @@ namespace CAF.GstMatching.Web.Controllers
                 return View("~/Views/MainAdmin/SalesLedgerClosedRequests/SalesLedgerClosedRequests.cshtml");
             }
 
-            //         var email = MySession.Current.Email; // Get the email from session
-            //var clients = await _userBusiness.GetMainAdminClients(email);
-            //string[] gstinArray = clients.Select(c => c.ClientGSTIN).ToArray();
-            //var Tickets = await _sLTicketsBusiness.GetClientsClosedTicketsStatusAsync(gstinArray, fromDateTime, toDateTime);
+            var email = MySession.Current.Email; // Get the email from session
+            var clients = await _userBusiness.GetAdminClients(email);
+            string[] gstinArray = clients.Select(c => c.ClientGSTIN).ToArray();
+            var Tickets = await _sLTicketsBusiness.GetClientsClosedTicketsStatusAsync(gstinArray, fromDateTime, toDateTime);
 
-            var Tickets = await _sLTicketsBusiness.GetCloseTicketsStatusAsync(MySession.Current.gstin, fromDateTime, toDateTime); //(ViewBag.UserGSTIN); // Fetch pending tickets based on user_gstin
+            //var Tickets = await _sLTicketsBusiness.GetCloseTicketsStatusAsync(MySession.Current.gstin, fromDateTime, toDateTime); //(ViewBag.UserGSTIN); // Fetch pending tickets based on user_gstin
 
             ViewBag.Tickets = Tickets;
 

@@ -47,7 +47,7 @@
                     <tr>
                         <th style="width: 6%">@(responseDict.ContainsKey("lblSLNo") ? responseDict["lblSLNo"] : "SL No")</th> <!-- New SL No column -->
                         <th style="width: 15%">@(responseDict.ContainsKey("lblRequestNumber") ? responseDict["lblRequestNumber"] : "Request Number")</th>
-                        @*<th style="width: 10%">@(responseDict.ContainsKey("lblVendorName") ? responseDict["lblVendorName"] : "Vendor Name")</th> *@
+                        <th style="width: 10%">@(responseDict.ContainsKey("lblVendorName") ? responseDict["lblVendorName"] : "Vendor Name")</th> 
 
                         <th style="width: 10%">@(responseDict.ContainsKey("lblVendorName") ? responseDict["lblVendorName"] : "Invoice Uploaded File Name")</th>
                         <th style="width: 10%">@(responseDict.ContainsKey("lblVendorName") ? responseDict["lblVendorName"] : "Portal Uploaded File Name")</th>
@@ -72,7 +72,7 @@
                             <td>
                                 @if (@ticket.TicketStatus == "Analysed")
                                 {
-                                    <a href="@Url.Action("CompareCSVResults", "Admin", new { requestNo = ticket.RequestNo, ClientGSTIN = ticket.ClientGSTIN })">
+                                    <a href="@Url.Action("CompareCSVResults", "MainAdmin", new { requestNo = ticket.RequestNo, ClientGSTIN = ticket.ClientGSTIN })">
                                         @ticket.RequestNo
                                     </a>
                                 }
@@ -81,14 +81,14 @@
                                     @ticket.RequestNo
                                 }
                             </td>
-                           @* <td>@ticket.EXERTUSERNAME</td> *@
+                            <td>@ticket.EXERTUSERNAME</td> 
                             <td>
-                                <a href="@Url.Action("ExportInvoiceFile", "Admin", new { requestNo = ticket.RequestNo, ClientGSTIN = ticket.ClientGSTIN })">
+                                <a href="@Url.Action("ExportInvoiceFile", "MainAdmin", new { requestNo = ticket.RequestNo, ClientGSTIN = ticket.ClientGSTIN })">
                                     @ticket.FileName
                                 </a>
                             </td>
                             <td>
-                                <a href="@Url.Action("ExportPortalFile", "Admin", new { requestNo = ticket.RequestNo, ClientGSTIN = ticket.ClientGSTIN })">
+                                <a href="@Url.Action("ExportPortalFile", "MainAdmin", new { requestNo = ticket.RequestNo, ClientGSTIN = ticket.ClientGSTIN })">
                                     @ticket.AdminFileName
                                 </a>
                             </td>
@@ -99,7 +99,7 @@
                             <td>@ticket.TxnPeriod</td>
                             <td>@ticket.TicketStatus</td>
                             <td>
-                                <a href="@Url.Action("CompareGSTAPI_Master", "Admin", new { ticketNumber = ticket.RequestNo, ClientGSTIN = ticket.ClientGSTIN, fromDate = fromDate, toDate = toDate })"
+                                <a href="@Url.Action("CompareGSTAPI_Master", "MainAdmin", new { ticketNumber = ticket.RequestNo, ClientGSTIN = ticket.ClientGSTIN, fromDate = fromDate, toDate = toDate })"
                                    class="btn-analyse">
                                     @(responseDict.ContainsKey("btnAnalyse") ? responseDict["btnAnalyse"] : "Analyse")
                                 </a>
@@ -130,6 +130,6 @@
         const toDate = document.getElementById('toDate').value;
 
         // Redirect with query parameters to persist dates
-        window.location.href = `@Url.Action("OpenTaskAPI_Master", "Admin")` + `?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`;
+        window.location.href = `@Url.Action("OpenTaskAPI_Master", "MainAdmin")` + `?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`;
     }
 </script>

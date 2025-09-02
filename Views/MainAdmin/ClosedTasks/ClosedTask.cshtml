@@ -77,12 +77,12 @@
 							</td>
 							@*<td>@ticket.EXERTUSERNAME</td> *@
 							<td>
-								<a href="@Url.Action("ExportInvoiceFile", "Admin", new { requestNo = ticket.RequestNo, ClientGSTIN = ticket.ClientGSTIN })">
+								<a href="@Url.Action("ExportInvoiceFile", "MainAdmin", new { requestNo = ticket.RequestNo, ClientGSTIN = ticket.ClientGSTIN })">
 									@ticket.FileName
 								</a>
 							</td>
 							<td>
-								<a href="@Url.Action("ExportPortalFile", "Admin", new { requestNo = ticket.RequestNo, ClientGSTIN = ticket.ClientGSTIN })">
+								<a href="@Url.Action("ExportPortalFile", "MainAdmin", new { requestNo = ticket.RequestNo, ClientGSTIN = ticket.ClientGSTIN })">
 									@ticket.AdminFileName
 								</a>
 							</td>
@@ -93,7 +93,7 @@
 							<td>@ticket.PeriodType</td> <!-- Assuming Period_Type property exists --> *@
 							<td>@ticket.TxnPeriod</td>
 							<td>
-								<a href="@Url.Action("ExportReport", "Admin", new { requestNo = ticket.RequestNo, fileName = ticket.FileName, ClientGSTIN = ticket.ClientGSTIN })"
+								<a href="@Url.Action("ExportReport", "MainAdmin", new { requestNo = ticket.RequestNo, fileName = ticket.FileName, ClientGSTIN = ticket.ClientGSTIN })"
 								   class="btn-analyse">
 									@(responseDict.ContainsKey("TicketStatus") ? responseDict["TicketStatus"] : @ticket.TicketStatus)
 								</a>
@@ -117,7 +117,7 @@
 		}
 	</div>
 	<div class="button-container">
-		<button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("OpenTaskCSV", "Admin")'">Back to Current Requests</button>
+		<button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("OpenTaskCSV", "MainAdmin")'">Back to Current Requests</button>
 	</div>
 </div>
 
@@ -127,6 +127,6 @@
 		const toDate = document.getElementById('toDate').value;
 
 		// Redirect with query parameters to persist dates
-		window.location.href = `@Url.Action("ClosedRequests", "Admin")` + `?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`;
+		window.location.href = `@Url.Action("ClosedRequests", "MainAdmin")` + `?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`;
 	}
 </script>

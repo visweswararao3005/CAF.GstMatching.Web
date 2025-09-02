@@ -78,17 +78,17 @@
 							</td>
 							@*<td>@ticket.ClientName</td>*@
 							<td>
-								<a href="@Url.Action("ExportSLInvoiceFile", "Admin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
+								<a href="@Url.Action("ExportSLInvoiceFile", "MainAdmin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
 									@ticket.FileName
 								</a>
 							</td>
 							<td>
-								<a href="@Url.Action("ExportSLEInvoiceFile", "Admin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
+								<a href="@Url.Action("ExportSLEInvoiceFile", "MainAdmin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
 									@ticket.EInvoiceFileName
 								</a>
 							</td>
 							<td>
-								<a href="@Url.Action("ExportSLEWayBillFile", "Admin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
+								<a href="@Url.Action("ExportSLEWayBillFile", "MainAdmin", new { requestNo = ticket.RequestNumber, ClientGSTIN = ticket.ClientGstin })">
 									@ticket.EWayBillFileName
 								</a>
 							</td>
@@ -99,7 +99,7 @@
 							<td>@ticket.PeriodType</td> <!-- Assuming Period_Type property exists --> *@
 							<td>@ticket.Period</td>
 							<td>
-								<a href="@Url.Action("ExportSLReport", "Admin", new { requestNo = ticket.RequestNumber, fileName = ticket.FileName, ClientGSTIN = ticket.ClientGstin })"
+								<a href="@Url.Action("ExportSLReport", "MainAdmin", new { requestNo = ticket.RequestNumber, fileName = ticket.FileName, ClientGSTIN = ticket.ClientGstin })"
 								   class="btn-analyse">
 									@(responseDict.ContainsKey("TicketStatus") ? responseDict["TicketStatus"] : @ticket.TicketStatus)
 								</a>
@@ -123,7 +123,7 @@
 		}
 	</div>
 	<div class="button-container">
-		<button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("SalesLedgerCurrentRequestsCSV", "Admin")'">Back to Current Requests</button>
+		<button class="action-button btn btn-primary" onclick="window.location.href='@Url.Action("SalesLedgerCurrentRequestsCSV", "MainAdmin")'">Back to Current Requests</button>
 	</div>
 </div>
 
@@ -133,6 +133,6 @@
 		const toDate = document.getElementById('toDate').value;
 
 		// Redirect with query parameters to persist dates
-		window.location.href = `@Url.Action("SalesLedgerClosedRequests", "Admin")` + `?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`;
+		window.location.href = `@Url.Action("SalesLedgerClosedRequests", "MainAdmin")` + `?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`;
 	}
 </script>
