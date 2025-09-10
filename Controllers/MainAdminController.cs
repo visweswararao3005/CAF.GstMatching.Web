@@ -2160,6 +2160,7 @@ namespace CAF.GstMatching.Web.Controllers
 
             string UserName = UserAPIData.GstPortalUsername;
             string Email = _configuration["PRMasterAPI:email"];
+            string section = _configuration["PRMasterAPI:section"];
 
             var authTokenData = await _gSTR2DataBusiness.GetTokenDataAsync(ClientGSTIN);
             try
@@ -2167,7 +2168,7 @@ namespace CAF.GstMatching.Web.Controllers
                 #region 4th Api call
 
                 // Parameters
-                string Parameters = $"email={Email}&gstin={ClientGSTIN}&rtnprd={period}";
+                string Parameters = $"email={Email}&gstin={ClientGSTIN}&section={section}";
 
                 // Add required headers
                 string stateCd = ClientGSTIN.Substring(0, 2);
@@ -2223,23 +2224,21 @@ namespace CAF.GstMatching.Web.Controllers
                 Console.WriteLine($"Result 4 : {result}");
                 //Console.ReadKey();
 
-                //
-
-                //condition 
-
-                //DataTable dataTable;
-                //try
-                //{
-                //    dataTable = ConvertJsonToDataTable2(responseData, ClientGSTIN);
-                //    await _gSTR2DataBusiness.SaveGSTR2DataAsync(dataTable, ticketnumber, ClientGSTIN);
-                //    return Json(new { goToCompare = true });
-                //}
-                //catch (Exception ex)
-                //{
-                //    string errorMessage = $"Error: {ex.Message}";
-                //    return Json(new { failure = true, message = errorMessage });
-                //}
-
+                if (result["data"] != null && result["data"]["b2b"] != null)
+                {
+                    DataTable dataTable;
+                    try
+                    {
+                        dataTable = ConvertJsonToDataTable2(responseData, ClientGSTIN);
+                        await _gSTR2DataBusiness.SaveGSTR2DataAsync(dataTable, ticketnumber, ClientGSTIN);
+                        return Json(new { goToCompare = true });
+                    }
+                    catch (Exception ex)
+                    {
+                        string errorMessage = $"Error: {ex.Message}";
+                        return Json(new { failure = true, message = errorMessage });
+                    }
+                }
 
                 //Result 3 : {
                 //    "data": {
@@ -2379,56 +2378,50 @@ namespace CAF.GstMatching.Web.Controllers
             table.Columns.Add("ReturnPeriod");
 
             JObject root = JObject.Parse(json);
-            var retPeriod = root["header"]?["ret_period"]?.ToString();
 
             var b2bList = root["data"]?["b2b"] as JArray;
             if (b2bList == null) return table;
 
             foreach (var b2b in b2bList)
             {
-                string cfs = b2b["cfs"]?.ToString(); // IsReturnFiled
-                string ctin = b2b["ctin"]?.ToString();
-                var invoices = b2b["inv"] as JArray;
+                string inum = b2b["inum"]?.ToString();
+                string idt = b2b["idt"]?.ToString();
+                string inv_typ = b2b["inv_typ"]?.ToString();
+                string stin = b2b["stin"]?.ToString(); // Supplier GSTIN
+                string srcfilstatus = b2b["srcfilstatus"]?.ToString(); // IsReturnFiled
+                decimal val = b2b["val"]?.ToObject<decimal>() ?? 0;
+                decimal txval = b2b["txval"]?.ToObject<decimal>() ?? 0;
+                decimal iamt = b2b["iamt"]?.ToObject<decimal>() ?? 0;
+                decimal camt = b2b["camt"]?.ToObject<decimal>() ?? 0;
+                decimal samt = b2b["samt"]?.ToObject<decimal>() ?? 0;
+                decimal cess = b2b["cess"]?.ToObject<decimal>() ?? 0;
+                string retPeriod = b2b["rtnprd"]?.ToString();
 
-                foreach (var inv in invoices)
+                // Gst rate is not directly present, if required calculate as (IGST+CGST+SGST)/txval * 100
+                decimal gstRate = 0;
+                if (txval > 0)
                 {
-                    string inum = inv["inum"]?.ToString();
-                    string idt = inv["idt"]?.ToString();
-                    string inv_typ = inv["inv_typ"]?.ToString();
-                    string rchrg = inv["rchrg"]?.ToString();
-                    decimal val = inv["val"]?.ToObject<decimal>() ?? 0;
-
-                    var items = inv["itms"] as JArray;
-                    foreach (var item in items)
-                    {
-                        var details = item["itm_det"];
-                        decimal txval = details["txval"]?.ToObject<decimal>() ?? 0;
-                        decimal rt = details["rt"]?.ToObject<decimal>() ?? 0;
-                        decimal iamt = details["iamt"]?.ToObject<decimal>() ?? 0;
-                        decimal camt = details["camt"]?.ToObject<decimal>() ?? 0;
-                        decimal samt = details["samt"]?.ToObject<decimal>() ?? 0;
-                        decimal csamt = details["csamt"]?.ToObject<decimal>() ?? 0;
-
-                        table.Rows.Add(
-                           userGstin,         // User GSTIN
-                           inv_typ,           // GstRegType
-                           inum,              // invoiceno
-                           idt,               // invoice_date
-                           ctin,              // SupplierGSTIN
-                           "",                // SupplierName (Not provided)
-                           "",                // IsRcmApplied (Not provided)
-                           val,               // InvoiceValue
-                           txval,             // ItemTaxableValue
-                           rt,                // GstRate
-                           iamt,              // IGSTAmount
-                           camt,              // CGSTAmount
-                           samt,              // SGSTAmount
-                           csamt,             // CESS
-                           cfs,                // IsReturnFiled (Not provided)
-                           retPeriod          // ReturnPeriod
-                       );
-                    }
+                    gstRate = ((iamt + camt + samt) / txval) * 100;
                 }
+
+                table.Rows.Add(
+                   userGstin,       // User GSTIN
+                   inv_typ,         // GstRegType
+                   inum,            // InvoiceNo
+                   idt,             // InvoiceDate
+                   stin,            // SupplierGSTIN
+                   "",              // SupplierName (Not provided)
+                   "",              // IsRcmApplied (Not provided)
+                   val,             // InvoiceValue
+                   txval,           // ItemTaxableValue
+                   gstRate,         // GstRate (calculated)
+                   iamt,            // IGSTAmount
+                   camt,            // CGSTAmount
+                   samt,            // SGSTAmount
+                   cess,            // CESS
+                   srcfilstatus,    // IsReturnFiled
+                   retPeriod        // ReturnPeriod
+                );
             }
 
             return table;
@@ -4949,8 +4942,9 @@ namespace CAF.GstMatching.Web.Controllers
 
         #region Logout
         // ✅ Logout (Redirect to Login Page)
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
+            await _userBusiness.UpdateUserLogoutTime(MySession.Current.Email, MySession.Current.gstin);
             HttpContext.Session.Clear();
             // Set cache headers
             Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, private";

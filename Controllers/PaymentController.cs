@@ -39,6 +39,10 @@ namespace CAF.GstMatching.Web.Controllers
             {
                 ViewBag.Messages = "Admin";
             }
+            else
+            {
+                ViewBag.Messages = "Change";
+            }
             // You can return a view or any other response here
             ViewBag.PricePerMonth = int.Parse(_configuration["Payment:PricePerMonth"]);
             ViewBag.Plans = _configuration.GetSection("Payment:Plans").Get<List<int>>(); // e.g., [1,2,3,6,12]

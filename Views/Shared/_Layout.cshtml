@@ -11,6 +11,11 @@
 	var currentUserEmail = Context.Session.GetString("Email") ?? "";
 	//var mainAdminEmails = Configuration["MainAdminEmail"]?.Split(',') ?? new string[0];
 }
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+	var allowMaster = HttpContextAccessor.HttpContext.Session.GetString("AllowMasterMenuItems");
+	var allowIris = HttpContextAccessor.HttpContext.Session.GetString("AllowIrisMenuItems");
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -26,7 +31,7 @@
 </head>
 <body data-logged-in="@(Context.Session.GetString("UserId") != null ? "true" : "false")">
 	<header class="bg-dark">
-		@if (ViewBag.Messages != "Vendor" && ViewBag.Messages != "Admin" && ViewBag.Messages != "RegisterPage" && ViewBag.Messages != "MainAdmin")
+		@if (ViewBag.Messages != "Vendor" && ViewBag.Messages != "Admin" && ViewBag.Messages != "Change" && ViewBag.Messages != "MainAdmin")
 		{
 			<!-- Default Header (e.g., Homepage) -->
 			<nav class="navbar navbar-expand-lg">
@@ -210,8 +215,14 @@
 								<ul class="dropdown-menu" aria-labelledby="purchaseRegisterActionListDropdown">
 									<li><a class="dropdown-item" href="@Url.Action("Upload", "Admin")">Purchase Register - Upload File</a></li>
 									<li><a class="dropdown-item" href="@Url.Action("OpenRequestsCSV", "Admin")">Purchase Register - Compare - CSV</a></li>
-									<li><a class="dropdown-item" href="@Url.Action("OpenTaskAPI_Master", "Admin")">Purchase Register - Compare - API - Master</a></li>
-									<li><a class="dropdown-item" href="@Url.Action("OpenTaskAPI_Iris", "Admin")">Purchase Register - Compare - API - Iris</a></li>
+									@if (!string.IsNullOrEmpty(allowMaster) && allowMaster.ToLower() == "yes")
+									{
+										<li><a class="dropdown-item" href="@Url.Action("OpenTaskAPI_Master", "Admin")">Purchase Register - Compare - API - Master</a></li>
+									}
+									@if (!string.IsNullOrEmpty(allowIris) && allowIris.ToLower() == "yes")
+									{
+										<li><a class="dropdown-item" href="@Url.Action("OpenTaskAPI_Iris", "Admin")">Purchase Register - Compare - API - Iris</a></li>
+									}
 									<li><a class="dropdown-item" href="@Url.Action("ClosedRequests", "Admin")">Purchase Register - Closed Requests</a></li>
 									@*<li><a class="dropdown-item" href="@Url.Action("DownloadFromGSTIN", "Admin")">Download from GSTIN</a></li>
 									<li><a class="dropdown-item" href="@Url.Action("UploadToDb", "Admin")">Upload to DB</a></li>
@@ -225,8 +236,14 @@
 								<ul class="dropdown-menu" aria-labelledby="salesLedgerActionListDropdown">
 									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerUpload", "Admin")">Sales Register - Upload File</a></li>
 									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequestsCSV", "Admin")">Sales Register - Compare - CSV</a></li>
-									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequestsAPI_Master", "Admin")">Sales Register - Compare - API - Master</a></li>
-									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequestsAPI_Iris", "Admin")">Sales Register - Compare - API - Iris</a></li>
+									@if (!string.IsNullOrEmpty(allowMaster) && allowMaster.ToLower() == "yes")
+									{
+										<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequestsAPI_Master", "Admin")">Sales Register - Compare - API - Master</a></li>
+									}
+									@if (!string.IsNullOrEmpty(allowIris) && allowIris.ToLower() == "yes")
+									{
+										<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequestsAPI_Iris", "Admin")">Sales Register - Compare - API - Iris</a></li>
+									}
 									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerClosedRequests", "Admin")">Sales Register - Closed Requests</a></li>
 									@*	<li><a class="dropdown-item" href="@Url.Action("DownloadFromGSTIN", "Admin")">Download from GSTIN</a></li>
 									<li><a class="dropdown-item" href="@Url.Action("UploadToDb", "Admin")">Upload to DB</a></li>
@@ -326,8 +343,14 @@
 								<ul class="dropdown-menu" aria-labelledby="purchaseRegisterActionListDropdown">
 									<li><a class="dropdown-item" href="@Url.Action("Upload", "MainAdmin")">Purchase Register - Upload File</a></li>
 									<li><a class="dropdown-item" href="@Url.Action("OpenRequestsCSV", "MainAdmin")">Purchase Register - Compare - CSV</a></li>
-									<li><a class="dropdown-item" href="@Url.Action("OpenTaskAPI_Master", "MainAdmin")">Purchase Register - Compare - API - Master</a></li>
-									<li><a class="dropdown-item" href="@Url.Action("OpenTaskAPI_Iris", "MainAdmin")">Purchase Register - Compare - API - Iris</a></li>
+									@if (!string.IsNullOrEmpty(allowMaster) && allowMaster.ToLower() == "yes")
+									{
+										<li><a class="dropdown-item" href="@Url.Action("OpenTaskAPI_Master", "MainAdmin")">Purchase Register - Compare - API - Master</a></li>
+									}
+									@if (!string.IsNullOrEmpty(allowIris) && allowIris.ToLower() == "yes")
+									{
+										<li><a class="dropdown-item" href="@Url.Action("OpenTaskAPI_Iris", "MainAdmin")">Purchase Register - Compare - API - Iris</a></li>
+									}
 									<li><a class="dropdown-item" href="@Url.Action("ClosedRequests", "MainAdmin")">Purchase Register - Closed Requests</a></li>
 									@*<li><a class="dropdown-item" href="@Url.Action("DownloadFromGSTIN", "Admin")">Download from GSTIN</a></li>
 									<li><a class="dropdown-item" href="@Url.Action("UploadToDb", "Admin")">Upload to DB</a></li>
@@ -341,8 +364,14 @@
 								<ul class="dropdown-menu" aria-labelledby="salesLedgerActionListDropdown">
 									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerUpload", "MainAdmin")">Sales Register - Upload File</a></li>
 									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequestsCSV", "MainAdmin")">Sales Register - Compare - CSV</a></li>
-									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequestsAPI_Master", "MainAdmin")">Sales Register - Compare - API - Master</a></li>
-									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequestsAPI_Iris", "MainAdmin")">Sales Register - Compare - API - Iris</a></li>
+									@if (!string.IsNullOrEmpty(allowMaster) && allowMaster.ToLower() == "yes")
+									{
+										<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequestsAPI_Master", "MainAdmin")">Sales Register - Compare - API - Master</a></li>
+									}
+									@if (!string.IsNullOrEmpty(allowIris) && allowIris.ToLower() == "yes")
+									{
+										<li><a class="dropdown-item" href="@Url.Action("SalesLedgerCurrentRequestsAPI_Iris", "MainAdmin")">Sales Register - Compare - API - Iris</a></li>
+									}
 									<li><a class="dropdown-item" href="@Url.Action("SalesLedgerClosedRequests", "MainAdmin")">Sales Register - Closed Requests</a></li>
 									@*	<li><a class="dropdown-item" href="@Url.Action("DownloadFromGSTIN", "Admin")">Download from GSTIN</a></li>
 									<li><a class="dropdown-item" href="@Url.Action("UploadToDb", "Admin")">Upload to DB</a></li>
@@ -391,6 +420,40 @@
 									<a class="nav-link text-light @((ViewData["ActiveAction"]?.ToString() == "act8") ? "active" : "")" href="@Url.Action("ManageUserAccess", "MainAdmin")">Manage User Access</a>
 								</li> *@
 							
+						</ul>
+					</div>
+				</div>
+			</nav>
+		}
+
+		else if (ViewBag.Messages == "Change")
+		{
+			<!-- Admins Header -->
+			<nav class="navbar navbar-expand-lg">
+				<div class="container-fluid">
+					<a class="navbar-brand" href="@Url.Action("OpenTaskCSV", "Admin")">
+						<img src="~/content/images/GSTLOGO.png" height="60px" alt="GSTCompare Logo" />
+
+					</a>
+					<!-- Welcome Message -->
+					<span class="navbar-text welcome-message">
+						@(ViewBag.ResponseDict?.ContainsKey("txtWelcomeBack") == true ? ViewBag.ResponseDict["txtWelcomeBack"] : "Welcome back"), @MySession.Current.UserName!
+					</span>
+					<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#taskdetNavbar" aria-controls="taskdetNavbar" aria-expanded="false" aria-label="Toggle navigation">
+						<span class="navbar-toggler-icon"></span>
+					</button>
+					<div class="collapse navbar-collapse" id="taskdetNavbar">
+						<ul class="navbar-nav ms-auto align-items-center gap-2">
+							<li class="nav-item dropdown">
+								<button class="btn dropdown-toggle" type="button" id="accountDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+									<span class="hamburger">☰</span> <!-- Hamburger icon (three lines) -->
+								</button>
+								<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
+									<li><a class="dropdown-item" href="@Url.Action("Index", "Payment")">Subscription</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("ChangePassword", "Admin")">Change Password</a></li>
+									<li><a class="dropdown-item" href="@Url.Action("Logout", "Admin")">Logout</a></li>
+								</ul>
+							</li>
 						</ul>
 					</div>
 				</div>
@@ -499,7 +562,7 @@
 
 		function handleSessionEnd() {
 			// Always redirect to login when OK is clicked
-			window.location.href = '@Url.Action("Login", "Home")';
+			window.location.href = '@Url.Action("Logout", "Admin")';
 		}
 
 		window.onload = () => {

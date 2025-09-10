@@ -82,6 +82,11 @@
                 get => _session.GetString("password") ?? string.Empty;
                 set => _session.SetString("password", value);
             }
+            public string passwordChanged
+            {
+                get => _session.GetString("passwordChanged") ?? string.Empty;
+                set => _session.SetString("passwordChanged", value);
+            }
         }
     }
 }
