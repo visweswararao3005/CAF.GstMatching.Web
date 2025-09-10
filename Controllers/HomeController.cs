@@ -139,19 +139,45 @@ namespace CAF.GstMatching.Web.Controllers
                         return View("Login");
                     }
 
+                    var menuItems = await _userBusiness.getMenuItemsDetails(user.emailId);
+                    HttpContext.Session.SetString("AllowMasterMenuItems", menuItems.allowMasterMenuItems);
+                    HttpContext.Session.SetString("AllowIrisMenuItems", menuItems.allowIrisMenuItems);
+
                     //_logger.LogInformation("User : name-{0} ,mail-{1} ,Code-{2}, gstin-{3}, password-{4}",
-                        //user.userName, user.emailId, user.userCode, user.gstin, password);
+                    //user.userName, user.emailId, user.userCode, user.gstin, password);
                     //_logger.LogInformation("password from form{0}", password);
                     MySession.Current.UserName = user.firstName;
                     MySession.Current.Email = user.emailId;
                     MySession.Current.UserCode = user.userCode;
                     MySession.Current.gstin = user.gstin;
                     MySession.Current.loginpassword = password;
+                    MySession.Current.passwordChanged = user.passwordChanged;
 
                     //_logger.LogInformation("gstin from session{0}", user.gstin);
                     //_logger.LogInformation("Name from session{0}", user.userName);
                     // Set UserId in session for data-logged-in check
                     HttpContext.Session.SetString("UserId", user.userCode);
+                    string sessionId = HttpContext.Session.Id;
+                    UserLoginHistoryModel loginHistory = new UserLoginHistoryModel
+                    {
+                        email = user.emailId,
+                        gstin = user.gstin,
+                        userName = user.firstName,
+                        sessionId = sessionId, // or your session identifier
+                        loginDateTime = DateTime.Now
+                    };
+
+                    await _userBusiness.SaveUserLoginHistory(loginHistory);
+
+
+                    if (MySession.Current.passwordChanged == "Yes")
+                    {
+
+                    }
+                    else
+                    {
+                        await _userBusiness.UpdatePasswordToYes(MySession.Current.Email);
+                    }
 
                     await TjCaptions("Dashboardpage"); // Load dashboard captions
 
@@ -160,14 +186,14 @@ namespace CAF.GstMatching.Web.Controllers
                     bool valid = (userValidUpto.accessToDate != null &&  DateTime.Now <= userValidUpto.accessToDate);
                     if (emails.Any(e => e.Email.Equals(email, StringComparison.OrdinalIgnoreCase)))
 					{
+                        if (user.passwordChanged == "No")
+                        {
+                            ViewBag.Message = "Admin";
+                            ViewBag.UserName = user.userName;
+                            return RedirectToAction("ChangePassword", "Admin");
+                        }
                         if (valid)
                         {
-                            if (user.passwordChanged == "No")
-                            {
-                                ViewBag.Messages = "Admin";
-                                ViewBag.UserName = user.userName;
-                                return RedirectToAction("ChangePassword", "Admin");
-                            }
                             ViewBag.Messages = "Admin";
                             ViewBag.UserName = user.userName;
                             return RedirectToAction("OpenTaskCSV", "Admin");
@@ -301,7 +327,6 @@ namespace CAF.GstMatching.Web.Controllers
                 if (response.IsSuccessStatusCode)
                 {
                     // Add User to UserValidUpto Table
-
                     UserValidUptoModel user = new UserValidUptoModel
                     {
                         userName = lblFullName,
@@ -310,6 +335,19 @@ namespace CAF.GstMatching.Web.Controllers
                     };
 
                     await _userBusiness.saveUserValidUpto(user);
+
+                    var allowMaster = _configuration["AllowMasterMenuItems"];
+                    var allowIris = _configuration["AllowIrisMenuItems"];
+                    // Add Menuitems for every user to MenuItems Table
+                    MenuItemsModel menuItemsDetails = new MenuItemsModel
+                    {
+                        userName = lblFullName,
+                        email = lblBussinesseMail,
+                        userGstin = lblGSTIN,
+                        allowMasterMenuItems = allowMaster,
+                        allowIrisMenuItems = allowIris,
+                    };
+                    await _userBusiness.saveMenuItemsDetails(menuItemsDetails);
 
                     await _userBusiness.markAsAdmin(lblBussinesseMail);
 
@@ -347,7 +385,7 @@ namespace CAF.GstMatching.Web.Controllers
                     #endregion
 
                     var responseContent = await response.Content.ReadAsStringAsync();
-                    ViewBag.SuccessMessage = "User Registered Successfully"; // Set success message
+                    ViewBag.SuccessMessage = $"User registered successfully. Please check your email ({lblBussinesseMail}) for more details."; // Set success message
                     ViewBag.FormValues = formValues; // Ensure form values are available for initial render
                     return View("Signup");
                 }
